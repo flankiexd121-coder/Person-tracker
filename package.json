@@ -1,0 +1,14 @@
+{
+  "name": "link-tracker",
+  "version": "1.0.0",
+  "description": "Share a link, track anyone's location",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

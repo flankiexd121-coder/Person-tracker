@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Share Location</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: white; border-radius: 16px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+    .icon { font-size: 60px; margin-bottom: 16px; }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    p { color: #666; margin-bottom: 20px; font-size: 14px; }
+    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 12px; }
+    .btn { width: 100%; padding: 14px; background: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #e8e8e8; color: #333; margin-top: 8px; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 14px; }
+    .status.active { background: #e8f5e9; color: #2e7d32; }
+    .status.error { background: #fbe9e7; color: #c62828; }
+    .status.inactive { background: #f5f5f5; color: #999; }
+    .coords { font-size: 12px; color: #666; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📍</div>
+    <h1>Share your location</h1>
+    <p id="desc">Enter your name and start sharing your location.</p>
+
+    <input type="text" id="nameInput" placeholder="Your name" />
+    <button class="btn" id="shareBtn" onclick="toggleShare()">Start Sharing</button>
+
+    <div class="status inactive" id="status">
+      Not sharing
+    </div>
+    <div class="coords" id="coords"></div>
+  </div>
+
+  <script>
+    const linkId = window.location.pathname.split('/').pop();
+    const nameInput = document.getElementById('nameInput');
+    const shareBtn = document.getElementById('shareBtn');
+    const statusEl = document.getElementById('status');
+    const coordsEl = document.getElementById('coords');
+    let isSharing = false;
+    let watchId = null;
+    let lastLoc = null;
+
+    function setStatus(type, msg) {
+      statusEl.className = 'status ' + type;
+      statusEl.textContent = msg;
+    }
+
+    function updateCoords(lat, lng, acc) {
+      coordsEl.textContent = `Lat: ${lat.toFixed(5)}  Lng: ${lng.toFixed(5)}  ±${acc.toFixed(0)}m`;
+    }
+
+    async function sendLocation(lat, lng, accuracy, speed) {
+      const name = nameInput.value.trim() || 'Anonymous';
+      try {
+        await fetch('/api/location/' + linkId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lng, accuracy, speed, name })
+        });
+      } catch (e) {
+        console.error('Send failed', e);
+      }
+    }
+
+    function toggleShare() {
+      if (isSharing) {
+        stopSharing();
+      } else {
+        startSharing();
+      }
+    }
+
+    function startSharing() {
+      if (!navigator.geolocation) {
+        setStatus('error', 'Geolocation not supported');
+        return;
+      }
+      if (!nameInput.value.trim()) {
+        setStatus('error', 'Please enter your name');
+        nameInput.focus();
+        return;
+      }
+      isSharing = true;
+      shareBtn.textContent = 'Stop Sharing';
+      setStatus('active', 'Sharing... ✓');
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy, speed } = pos.coords;
+          updateCoords(latitude, longitude, accuracy);
+          sendLocation(latitude, longitude, accuracy || 0, speed || 0);
+        },
+        (err) => {
+          console.error(err);
+          setStatus('error', 'Error getting location: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function stopSharing() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      isSharing = false;
+      shareBtn.textContent = 'Start Sharing';
+      setStatus('inactive', 'Not sharing');
+      coordsEl.textContent = '';
+    }
+  </script>
+</body>
+</html>

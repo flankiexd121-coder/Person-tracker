@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Tracker</title>
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: -apple-system, sans-serif; background: #f5f5f5; }
+    #map { height: 50vh; width: 100%; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .card { background: white; border-radius: 12px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .input-row { display: flex; gap: 8px; margin: 12px 0; }
+    .input-row input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    .input-row button { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .link-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+    .link-item:last-child { border-bottom: none; }
+    .link-label { font-weight: 600; }
+    .link-url { font-size: 12px; color: #666; word-break: break-all; }
+    .link-status { font-size: 12px; color: #007aff; }
+    .delete-btn { color: #ff3b30; background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; }
+    .copy-btn { background: #e8e8e8; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .share-btn { background: #007aff; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .actions { display: flex; gap: 6px; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .person-marker { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="container">
+    <h1>📍 Tracker</h1>
+    <p style="color:#666;margin-bottom:12px">Create a link, send it to someone, watch them on the map.</p>
+
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="labelInput" placeholder="Who? (e.g. Mom, John...)" />
+        <button onclick="createLink()">+ Link</button>
+      </div>
+    </div>
+
+    <div class="card" id="linksContainer">
+      <p style="color:#999;text-align:center;padding:20px">No links yet. Create one above!</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const map = L.map('map').setView([40, -100], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    const colors = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4'];
+    const markers = {};
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    async function createLink() {
+      const label = document.getElementById('labelInput').value.trim() || 'Untitled';
+      const res = await fetch('/api/create-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label })
+      });
+      const data = await res.json();
+      document.getElementById('labelInput').value = '';
+      showToast('Link created!');
+      loadLinks();
+
+      if (navigator.share && data.url) {
+        try { await navigator.share({ title: 'Share location', text: 'Open this link to share your location with me', url: data.url }); } catch(_) {}
+      }
+    }
+
+    async function loadLinks() {
+      const res = await fetch('/api/links');
+      const links = await res.json();
+      const container = document.getElementById('linksContainer');
+      if (links.length === 0) {
+        container.innerHTML = '<p style="color:#999;text-align:center;padding:20px">No links yet. Create one above!</p>';
+        return;
+      }
+      container.innerHTML = links.map((link, i) => {
+        const color = colors[i % colors.length];
+        const status = link.latest
+          ? `<span class="link-status">📍 ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()}</span>`
+          : '<span class="link-status" style="color:#999">Waiting...</span>';
+        return `
+          <div class="link-item">
+            <div>
+              <div class="link-label"><span class="dot" style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block"></span> ${link.label}</div>
+              <div class="link-url">${window.location.origin}/track/${link.id}</div>
+              <div style="margin-top:4px">${status}</div>
+            </div>
+            <div class="actions">
+              <button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${link.id}')">Copy</button>
+              <button class="share-btn" onclick="shareLink('${window.location.origin}/track/${link.id}')">Share</button>
+              <button class="delete-btn" onclick="deleteLink('${link.id}')">×</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyLink(url) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+        showToast('Copied!');
+      }
+    }
+
+    function shareLink(url) {
+      if (navigator.share) {
+        navigator.share({ title: 'Share location', text: 'Open this to share your location', url });
+      } else {
+        copyLink(url);
+      }
+    }
+
+    async function deleteLink(id) {
+      if (!confirm('Delete this link?')) return;
+      await fetch('/api/links/' + id, { method: 'DELETE' });
+      delete markers[id];
+      loadLinks();
+    }
+
+    async function fetchLocations() {
+      const res = await fetch('/api/links');
+      const links = await res.json();
+      const hasNew = [];
+      links.forEach((link, i) => {
+        if (!link.latest) return;
+        const loc = link.latest;
+        const color = colors[i % colors.length];
+        const key = link.id;
+        if (markers[key]) {
+          markers[key].setLatLng([loc.lat, loc.lng]);
+        } else {
+          const m = L.circleMarker([loc.lat, loc.lng], {
+            radius: 12, fillColor: color, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.8
+          }).addTo(map);
+          m.bindPopup(`<b>${link.label}</b><br>${loc.name}<br>📍 ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}<br>🕐 ${new Date(loc.timestamp).toLocaleTimeString()}`);
+          markers[key] = m;
+          hasNew.push(m.getLatLng());
+        }
+      });
+      if (hasNew.length > 0) {
+        map.fitBounds(hasNew, { padding: [50,50] });
+      }
+    }
+
+    loadLinks();
+    setInterval(loadLinks, 10000);
+    fetchLocations();
+    setInterval(fetchLocations, 5000);
+  </script>
+</body>
+</html>
