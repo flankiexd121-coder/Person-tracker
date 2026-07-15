@@ -82,7 +82,7 @@
   </div>
   <div class="container">
     <div class="header">
-      <h1 id="title">Tracker</h1>
+      <div style="display:flex;align-items:center;gap:10px"><h1 id="title" style="margin:0">Tracker</h1><button onclick="refreshAll()" style="background:rgba(0,122,255,0.15);border:none;color:#007aff;font-size:18px;cursor:pointer;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center" title="Refresh">↻</button></div>
       <select class="lang-select" id="langSelect" onchange="setLang(this.value)">
         <option value="en">English</option>
         <option value="nl">Nederlands</option>
@@ -251,6 +251,7 @@
     si.addEventListener('keydown',e=>{if(e.key==='Enter')searchPlace();});
     async function searchPlace(q){q=q||si.value.trim();if(q.length<2)return;try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);const d=await r.json();const b=document.getElementById('searchResults');b.innerHTML='';if(d.length===0){b.innerHTML=`<div style="color:rgba(255,255,255,0.3)">${t('noResults')}</div>`;b.classList.add('show');return;}d.forEach(p=>{const el=document.createElement('div');el.textContent=p.display_name.split(', ').slice(0,3).join(', ');el.addEventListener('click',()=>{si.value=el.textContent;b.classList.remove('show');map.flyTo([parseFloat(p.lat),parseFloat(p.lon)],13);L.circleMarker([parseFloat(p.lat),parseFloat(p.lon)],{radius:8,color:'#007aff',fillColor:'#007aff',fillOpacity:0.5,weight:2}).addTo(map).bindPopup(`<b>${el.textContent}</b>`).openPopup();});b.appendChild(el);});b.classList.add('show');}catch(e){console.error(e);}}
     document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('searchResults').classList.remove('show');});
+    function refreshAll(){loadLinks();loadZones();loadEvents();fetchLocations();toast('Refreshed ✓');}
     if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
     applyLang();loadLinks();loadZones();loadEvents();fetchLocations();
     setInterval(loadLinks,10000);setInterval(fetchLocations,5000);setInterval(loadZones,15000);setInterval(loadEvents,5000);
