@@ -77,6 +77,24 @@
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#007aff; cursor:pointer; box-shadow:0 2px 8px rgba(0,122,255,0.3); }
     .hint { font-size:12px; color:rgba(255,255,255,0.25); margin-bottom:8px; }
 
+    /* Search bar overlay */
+    .search-container { position:absolute; top:12px; left:12px; right:60px; z-index:1000; }
+    .search-row { display:flex; gap:6px; }
+    .search-row input { flex:1; padding:10px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:10px; font-size:14px;
+      background:rgba(20,20,30,0.9); backdrop-filter:blur(15px); color:#f0f0f5; outline:none; transition:all 0.2s; }
+    .search-row input:focus { border-color:#007aff; }
+    .search-row input::placeholder { color:rgba(255,255,255,0.3); }
+    .search-row button { padding:10px 14px; border:none; border-radius:10px; background:rgba(0,122,255,0.2); color:#007aff;
+      font-size:16px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(15px); }
+    .search-row button:hover { background:rgba(0,122,255,0.35); }
+    .search-results { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:rgba(20,20,30,0.95);
+      backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; display:none; max-height:200px; overflow-y:auto; }
+    .search-results div { padding:10px 14px; font-size:13px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.03);
+      transition:background 0.15s; }
+    .search-results div:last-child { border-bottom:none; }
+    .search-results div:hover { background:rgba(0,122,255,0.1); }
+    .search-results.show { display:block; animation:fadeIn 0.15s ease; }
+
     @media(max-width:768px) {
       .app-layout { flex-direction:column; }
       .map-panel { height:40vh; flex:none; }
@@ -86,7 +104,16 @@
 </head>
 <body>
   <div class="app-layout">
-    <div class="map-panel"><div id="map"></div></div>
+    <div class="map-panel">
+      <div class="search-container">
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="Search city..." autocomplete="off" />
+          <button onclick="searchPlace()">🔍</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <div id="map"></div>
+    </div>
     <div class="ui-panel">
       <div class="ui-header">
         <h1 id="title">Tracker</h1>
@@ -540,6 +567,46 @@
       if (navigator.share) { navigator.share({title:'Share location',text:'Open this to share your location',url}); }
       else { copyLink(url); }
     }
+
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      const q = searchInput.value.trim();
+      if (q.length < 2) { document.getElementById('searchResults').classList.remove('show'); return; }
+      searchTimeout = setTimeout(() => searchPlace(q), 400);
+    });
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchPlace(); });
+
+    async function searchPlace(query) {
+      const q = query || searchInput.value.trim();
+      if (q.length < 2) return;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
+        const data = await res.json();
+        const box = document.getElementById('searchResults');
+        box.innerHTML = '';
+        if (data.length === 0) { box.innerHTML = '<div style="color:rgba(255,255,255,0.3)">No results</div>'; box.classList.add('show'); return; }
+        data.forEach(p => {
+          const d = document.createElement('div');
+          d.textContent = p.display_name.split(', ').slice(0,3).join(', ');
+          d.addEventListener('click', () => {
+            searchInput.value = d.textContent;
+            box.classList.remove('show');
+            map.flyTo([parseFloat(p.lat), parseFloat(p.lon)], 13);
+            L.circleMarker([parseFloat(p.lat), parseFloat(p.lon)], {
+              radius: 8, color: '#007aff', fillColor: '#007aff', fillOpacity: 0.5, weight: 2
+            }).addTo(map).bindPopup(`<b>${d.textContent}</b>`).openPopup();
+          });
+          box.appendChild(d);
+        });
+        box.classList.add('show');
+      } catch (e) { console.error(e); }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-container')) document.getElementById('searchResults').classList.remove('show');
+    });
 
     async function loadLinks() {
       const res = await fetch('/api/links');
