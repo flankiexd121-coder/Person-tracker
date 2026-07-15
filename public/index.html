@@ -10,80 +10,110 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
-    #map { height: 45vh; width: 100%; z-index: 0; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #f0f0f5; }
+    #map { height: 42vh; width: 100%; z-index: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .container { max-width: 600px; margin: 0 auto; padding: 12px 16px; }
     .row { display: flex; gap: 8px; margin: 8px 0; }
-    .row input { flex:1; padding: 10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:15px; }
-    .row button { padding:10px 16px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
-    .btn-primary { background:#007aff; color:white; }
-    .btn-danger { background:#ff3b30; color:white; }
-    .btn-outline { background:white; color:#007aff; border:1px solid #007aff; }
-    .card { background:white; border-radius:14px; padding:16px; margin:10px 0; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
-    .tabs { display:flex; gap:4px; margin-bottom:12px; background:#e8eaed; border-radius:10px; padding:3px; }
-    .tab { flex:1; text-align:center; padding:8px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; color:#666; }
-    .tab.active { background:white; color:#111; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-    .link-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+    .row input { flex:1; padding: 12px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; font-size:15px; background:rgba(255,255,255,0.04); color:#f0f0f5; outline:none; transition: all 0.2s; }
+    .row input:focus { border-color: #007aff; background: rgba(0,122,255,0.06); }
+    .row input::placeholder { color: rgba(255,255,255,0.25); }
+    .row button { padding:12px 20px; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; transition: all 0.2s; }
+    .row button:active { transform: scale(0.96); }
+    .btn-primary { background:linear-gradient(135deg, #007aff, #5856d6); color:white; box-shadow:0 4px 15px rgba(0,122,255,0.25); }
+    .btn-primary:hover { box-shadow:0 6px 25px rgba(0,122,255,0.4); }
+    .btn-danger { background:linear-gradient(135deg, #ff3b30, #ff2d55); color:white; box-shadow:0 4px 15px rgba(255,59,48,0.25); }
+    .btn-outline { background:rgba(255,255,255,0.05); color:#007aff; border:1px solid rgba(0,122,255,0.3); backdrop-filter:blur(10px); }
+    .card { background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:16px; margin:10px 0; animation: fadeIn 0.3s ease; }
+    .card-dark { background:rgba(0,0,0,0.2); }
+    .tabs { display:flex; gap:4px; margin-bottom:12px; background:rgba(255,255,255,0.04); border-radius:12px; padding:3px; backdrop-filter:blur(10px); }
+    .tab { flex:1; text-align:center; padding:10px; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; color:rgba(255,255,255,0.4); transition: all 0.3s; }
+    .tab.active { background:rgba(0,122,255,0.15); color:#007aff; font-weight:600; box-shadow:0 2px 10px rgba(0,122,255,0.1); }
+    .link-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.04); animation: fadeIn 0.3s ease; }
     .link-item:last-child { border-bottom:none; }
-    .link-label { font-weight:600; font-size:14px; }
-    .link-url { font-size:11px; color:#8e8e93; word-break:break-all; margin-top:2px; }
-    .link-status { font-size:12px; margin-top:4px; }
-    .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; }
-    .zone-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+    .link-label { font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px; }
+    .link-url { font-size:11px; color:rgba(255,255,255,0.3); word-break:break-all; margin-top:3px; }
+    .link-status { font-size:12px; margin-top:5px; color:rgba(255,255,255,0.5); }
+    .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; animation: pulse 2s infinite; flex-shrink:0; }
+    .zone-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); animation: fadeIn 0.3s ease; }
     .zone-item:last-child { border-bottom:none; }
-    .event-item { padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+    .event-item { padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:13px; animation: fadeIn 0.3s ease; }
     .event-item:last-child { border-bottom:none; }
-    .event-enter { color:#2e7d32; }
-    .event-exit { color:#c62828; }
-    .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; margin-right:4px; background:#e8f5e9; color:#2e7d32; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; background:#ff3b30; color:white; margin-left:4px; }
+    .event-enter { color: #34c759; }
+    .event-exit { color: #ff3b30; }
+    .tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; margin-right:4px; background:rgba(52,199,89,0.12); color:#34c759; border:1px solid rgba(52,199,89,0.2); }
     .actions { display:flex; gap:6px; }
-    .copy-btn, .share-btn { background:#f2f2f7; border:none; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer; }
-    .share-btn { background:#007aff; color:white; }
-    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:12px 24px; border-radius:10px; font-size:14px; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:9999; }
-    .toast.show { opacity:1; }
-    .empty-state { color:#aeaeb2; text-align:center; padding:24px 0; font-size:14px; }
-    .notif-badge { position:fixed; top:8px; right:8px; background:#ff3b30; color:white; border-radius:50%; min-width:22px; height:22px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; z-index:1000; padding:0 6px; display:none; }
+    .copy-btn, .share-btn { border:none; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; transition: all 0.2s; }
+    .copy-btn { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); }
+    .copy-btn:hover { background:rgba(255,255,255,0.1); }
+    .share-btn { background:rgba(0,122,255,0.15); color:#007aff; }
+    .share-btn:hover { background:rgba(0,122,255,0.25); }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(30,30,40,0.95); backdrop-filter:blur(20px); color:white; padding:14px 28px; border-radius:14px; font-size:14px; opacity:0; transition: opacity 0.4s, transform 0.4s; pointer-events:none; z-index:9999; border:1px solid rgba(255,255,255,0.06); white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .empty-state { color:rgba(255,255,255,0.2); text-align:center; padding:32px 0; font-size:14px; }
+    .notif-badge { position:fixed; top:12px; right:12px; background:#ff3b30; color:white; border-radius:50%; min-width:24px; height:24px; font-size:12px; font-weight:700; display:none; align-items:center; justify-content:center; z-index:1000; padding:0 7px; box-shadow:0 4px 15px rgba(255,59,48,0.3); animation: bounceIn 0.3s ease; }
+    .slider-group { display:flex; align-items:center; gap:12px; margin-top:8px; }
+    .slider-group span { font-size:13px; color:rgba(255,255,255,0.5); min-width:50px; }
+    input[type="range"] { -webkit-appearance:none; flex:1; height:4px; border-radius:2px; background:rgba(255,255,255,0.1); outline:none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#007aff; cursor:pointer; box-shadow:0 2px 8px rgba(0,122,255,0.3); }
+    .zone-coords { font-size:12px; color:rgba(255,255,255,0.3); margin-top:6px; text-align:center; }
+    .hint { font-size:13px; color:rgba(255,255,255,0.3); margin-bottom:10px; }
+    .header { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+    .header h1 { font-size:24px; font-weight:700; background:linear-gradient(135deg, #f0f0f5, #007aff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .header span { font-size:12px; color:rgba(255,255,255,0.3); }
+
+    /* Connection status indicator */
+    .status-bar { display:flex; align-items:center; gap:6px; font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:8px; }
+    .status-bar .live-dot { width:6px; height:6px; border-radius:50%; background:#34c759; animation: pulse 2s infinite; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div class="container">
+    <div class="header">
+      <h1>Tracker</h1>
+      <span>● live</span>
+    </div>
+
     <div class="tabs" id="tabs">
       <div class="tab active" data-tab="people">People</div>
       <div class="tab" data-tab="zones">Zones</div>
       <div class="tab" data-tab="events">Activity</div>
     </div>
 
-    <!-- PEOPLE TAB -->
     <div id="tab-people">
       <div class="card">
         <div class="row">
-          <input type="text" id="labelInput" placeholder="Who? (e.g. Mom, John...)" />
+          <input type="text" id="labelInput" placeholder="Name (Mom, John...)" />
           <button class="btn-primary" onclick="createLink()">+ Link</button>
         </div>
       </div>
-      <div class="card" id="linksContainer"><div class="empty-state">No links yet.</div></div>
+      <div class="card" id="linksContainer"><div class="empty-state">No links yet</div></div>
     </div>
 
-    <!-- ZONES TAB -->
     <div id="tab-zones" style="display:none">
       <div class="card">
-        <p style="font-size:13px;color:#666;margin-bottom:8px">Click on the map to place a zone, then name it.</p>
+        <div class="hint">Click the map to place a zone</div>
         <div class="row">
-          <input type="text" id="zoneNameInput" placeholder="Zone name (e.g. Home, Work...)" />
+          <input type="text" id="zoneNameInput" placeholder="Zone name (Home, Work...)" />
           <button class="btn-primary" onclick="createZone()">+ Zone</button>
         </div>
-        <p style="font-size:12px;color:#999;margin-top:6px">Radius: <span id="zoneRadiusDisplay">100m</span>
-          <input type="range" id="zoneRadius" min="20" max="500" value="100" style="width:100%" oninput="zoneRadiusDisplay.textContent=this.value+'m'"></p>
-        <p id="zoneCoords" style="font-size:12px;color:#999"></p>
+        <div class="slider-group">
+          <span>Radius</span>
+          <input type="range" id="zoneRadius" min="20" max="500" value="100" oninput="document.getElementById('zrDisplay').textContent=this.value+'m'">
+          <span id="zrDisplay" style="min-width:45px;text-align:right">100m</span>
+        </div>
+        <div class="zone-coords" id="zoneCoords"></div>
       </div>
-      <div class="card" id="zonesContainer"><div class="empty-state">No zones yet.</div></div>
+      <div class="card" id="zonesContainer"><div class="empty-state">No zones yet</div></div>
     </div>
 
-    <!-- EVENTS TAB -->
     <div id="tab-events" style="display:none">
-      <div class="card" id="eventsContainer"><div class="empty-state">No activity yet.</div></div>
+      <div class="card" id="eventsContainer"><div class="empty-state">No activity yet</div></div>
     </div>
   </div>
 
@@ -91,38 +121,42 @@
   <div class="notif-badge" id="notifBadge">0</div>
 
   <script>
-    const map = L.map('map', { tap: false }).setView([40, -100], 4);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const map = L.map('map', { tap: false, zoomControl: false }).setView([40, -100], 3);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | CARTO'
+    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const colors = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4'];
+    const colors = ['#007aff','#34c759','#ff9500','#ff2d55','#5856d6','#ff6482','#30d158','#64d2ff','#ffd60a','#bf5af2'];
     const markers = {};
     const zoneCircles = {};
     let pendingZonePos = null;
     let eventCount = 0;
 
-    // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
         document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
-        if (tab.dataset.tab === 'events') document.getElementById('notifBadge').style.display = 'none';
+        if (tab.dataset.tab === 'events') {
+          document.getElementById('notifBadge').style.display = 'none';
+          eventCount = 0;
+        }
       });
     });
 
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg; t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2000);
+      setTimeout(() => t.classList.remove('show'), 2500);
     }
 
-    // Click map to place zone
     map.on('click', (e) => {
       document.querySelector('.tab[data-tab="zones"]').click();
       pendingZonePos = e.latlng;
       document.getElementById('zoneCoords').textContent =
-        `📍 ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+        `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
     });
 
     async function createLink() {
@@ -133,7 +167,7 @@
       });
       const data = await res.json();
       document.getElementById('labelInput').value = '';
-      showToast('Link created!');
+      showToast('Link created ✓');
       loadLinks();
       if (navigator.share && data.url) {
         try { await navigator.share({title:'Share location',text:'Open this to share your location with me',url:data.url}); } catch(_) {}
@@ -142,14 +176,14 @@
 
     async function createZone() {
       const name = document.getElementById('zoneNameInput').value.trim();
-      if (!name || !pendingZonePos) { showToast('Click the map and enter a name'); return; }
+      if (!name || !pendingZonePos) { showToast('Click the map and name the zone'); return; }
       const radius = parseInt(document.getElementById('zoneRadius').value);
       const res = await fetch('/api/zones', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({name, lat: pendingZonePos.lat, lng: pendingZonePos.lng, radius})
       });
       if (res.ok) {
-        showToast('Zone created!');
+        showToast('Zone created ✓');
         document.getElementById('zoneNameInput').value = '';
         document.getElementById('zoneCoords').textContent = '';
         pendingZonePos = null;
@@ -158,21 +192,21 @@
     }
 
     async function deleteZone(id) {
-      if (!confirm('Delete this zone?')) return;
+      if (!confirm('Delete zone?')) return;
       await fetch('/api/zones/' + id, {method:'DELETE'});
       if (zoneCircles[id]) { map.removeLayer(zoneCircles[id]); delete zoneCircles[id]; }
       loadZones();
     }
 
     async function deleteLink(id) {
-      if (!confirm('Delete this link?')) return;
+      if (!confirm('Delete link?')) return;
       await fetch('/api/links/' + id, {method:'DELETE'});
       if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
       loadLinks();
     }
 
     function copyLink(url) {
-      if (navigator.clipboard) { navigator.clipboard.writeText(url); showToast('Copied!'); }
+      if (navigator.clipboard) { navigator.clipboard.writeText(url); showToast('Copied ✓'); }
     }
 
     function shareLink(url) {
@@ -185,7 +219,7 @@
       const links = await res.json();
       const container = document.getElementById('linksContainer');
       if (links.length === 0) {
-        container.innerHTML = '<div class="empty-state">No links yet. Create one above!</div>';
+        container.innerHTML = '<div class="empty-state">No links yet</div>';
         return;
       }
       container.innerHTML = links.map((link, i) => {
@@ -194,11 +228,12 @@
           const z = window._zones?.find(zz => zz.id === zid);
           return z ? `<span class="tag">${z.name}</span>` : '';
         }).join('');
+        const isLive = link.latest && (Date.now() - new Date(link.latest.timestamp).getTime() < 60000);
         const status = link.latest
-          ? `<span class="link-status" style="color:#666">📍 ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()} ${zonesHere}</span>`
-          : '<span class="link-status" style="color:#aeaeb2">⏳ Waiting...</span>';
+          ? `<span class="link-status">${isLive ? '<span style="color:#34c759">●</span>' : '<span style="color:rgba(255,255,255,0.2)">○</span>'} ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()} ${zonesHere}</span>`
+          : '<span class="link-status">⏳ waiting...</span>';
         return `<div class="link-item">
-          <div>
+          <div style="flex:1;min-width:0">
             <div class="link-label"><span class="status-dot" style="background:${color}"></span>${link.label}</div>
             <div class="link-url">${window.location.origin}/track/${link.id}</div>
             <div>${status}</div>
@@ -206,7 +241,7 @@
           <div class="actions">
             <button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${link.id}')">Copy</button>
             <button class="share-btn" onclick="shareLink('${window.location.origin}/track/${link.id}')">Share</button>
-            <button onclick="deleteLink('${link.id}')" style="background:none;border:none;color:#ff3b30;font-size:18px;cursor:pointer;padding:4px">×</button>
+            <button onclick="deleteLink('${link.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:20px;cursor:pointer;padding:4px">×</button>
           </div>
         </div>`;
       }).join('');
@@ -216,28 +251,29 @@
       const res = await fetch('/api/zones');
       const zones = await res.json();
       window._zones = zones;
-      // Remove old zone circles
       Object.values(zoneCircles).forEach(c => map.removeLayer(c));
       Object.keys(zoneCircles).forEach(k => delete zoneCircles[k]);
       zones.forEach(z => {
         const circle = L.circle([z.lat, z.lng], {
-          radius: z.radius, color: '#007aff', fillColor: '#007aff', fillOpacity: 0.1, weight: 2
+          radius: z.radius, color: 'rgba(0,122,255,0.4)', fillColor: 'rgba(0,122,255,0.08)', fillOpacity: 1, weight: 2
         }).addTo(map);
-        circle.bindPopup(`<b>${z.name}</b><br>Radius: ${z.radius}m`);
+        circle.bindPopup(`<b style="color:#fff">${z.name}</b><br><span style="color:rgba(255,255,255,0.5)">${z.radius}m radius</span>`);
         L.marker([z.lat, z.lng], {
-          icon: L.divIcon({html: `<div style="background:#007aff;color:white;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">${z.name}</div>`, className: '', iconSize: [0,0]})
+          icon: L.divIcon({html: `<div style="background:rgba(0,122,255,0.15);color:#007aff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;backdrop-filter:blur(10px);border:1px solid rgba(0,122,255,0.2)">${z.name}</div>`, className: '', iconSize: [0,0]})
         }).addTo(map);
         zoneCircles[z.id] = circle;
       });
       const container = document.getElementById('zonesContainer');
       if (zones.length === 0) {
-        container.innerHTML = '<div class="empty-state">No zones. Click the map to place one.</div>';
+        container.innerHTML = '<div class="empty-state">Click the map to place a zone</div>';
         return;
       }
-      container.innerHTML = zones.map(z => `<div class="zone-item">
-        <div><span style="font-weight:600">${z.name}</span><br><span style="font-size:12px;color:#8e8e93">${z.lat.toFixed(5)}, ${z.lng.toFixed(5)} · ${z.radius}m radius</span></div>
-        <button onclick="deleteZone('${z.id}')" style="background:none;border:none;color:#ff3b30;font-size:18px;cursor:pointer">×</button>
-      </div>`).join('');
+      container.innerHTML = zones.map(z =>
+        `<div class="zone-item">
+          <div><span style="font-weight:600">${z.name}</span><br><span style="font-size:12px;color:rgba(255,255,255,0.3)">${z.lat.toFixed(5)}, ${z.lng.toFixed(5)} · ${z.radius}m radius</span></div>
+          <button onclick="deleteZone('${z.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:20px;cursor:pointer">×</button>
+        </div>`
+      ).join('');
       if (zones.length > 0) {
         map.fitBounds(zones.map(z => [z.lat, z.lng]), {padding: [50,50]});
       }
@@ -248,7 +284,7 @@
       const events = await res.json();
       const container = document.getElementById('eventsContainer');
       if (events.length === 0) {
-        container.innerHTML = '<div class="empty-state">No activity yet.</div>';
+        container.innerHTML = '<div class="empty-state">No activity yet</div>';
         return;
       }
       const newEvents = events.filter(e => e.timestamp > (window._lastEventTime || '0'));
@@ -257,23 +293,20 @@
         const badge = document.getElementById('notifBadge');
         badge.textContent = eventCount;
         badge.style.display = 'flex';
-        // Show toast for latest event
         const latest = newEvents[0];
         const icon = latest.type === 'enter' ? '📍' : '🚶';
         showToast(`${icon} ${latest.personName} ${latest.type === 'enter' ? 'arrived at' : 'left'} "${latest.zoneName}"`);
-        // Play notification sound if supported
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Tracker', { body: `${latest.personName} ${latest.type === 'enter' ? 'arrived at' : 'left'} ${latest.zoneName}` });
         }
       }
       window._lastEventTime = events[0]?.timestamp;
-
       container.innerHTML = events.map(e => {
         const cls = e.type === 'enter' ? 'event-enter' : 'event-exit';
         const icon = e.type === 'enter' ? '📍' : '🚶';
         return `<div class="event-item ${cls}">
           <strong>${icon} ${e.personName}</strong> ${e.type === 'enter' ? 'entered' : 'left'} <strong>${e.zoneName}</strong>
-          <br><span style="color:#8e8e93;font-size:11px">${new Date(e.timestamp).toLocaleString()}</span>
+          <br><span style="color:rgba(255,255,255,0.2);font-size:11px">${new Date(e.timestamp).toLocaleString()}</span>
         </div>`;
       }).join('');
     }
@@ -291,13 +324,13 @@
           const z = window._zones?.find(zz => zz.id === zid);
           return z ? z.name : '';
         }).filter(Boolean).join(', ');
-        const popupHtml = `<b>${link.label}</b><br>${loc.name}<br>📍 ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}<br>🕐 ${new Date(loc.timestamp).toLocaleTimeString()}${zonesHere ? '<br>📍 In: ' + zonesHere : ''}`;
+        const popupHtml = `<b style="color:#fff">${link.label}</b><br><span style="color:rgba(255,255,255,0.6)">${loc.name}<br>📍 ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}<br>🕐 ${new Date(loc.timestamp).toLocaleTimeString()}${zonesHere ? '<br>📍 In ' + zonesHere : ''}</span>`;
         if (markers[key]) {
           markers[key].setLatLng([loc.lat, loc.lng]);
           markers[key].setPopupContent(popupHtml);
         } else {
           const m = L.circleMarker([loc.lat, loc.lng], {
-            radius: 12, fillColor: color, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.8
+            radius: 12, fillColor: color, color: 'rgba(255,255,255,0.3)', weight: 2, opacity: 1, fillOpacity: 0.9
           }).addTo(map);
           m.bindPopup(popupHtml);
           markers[key] = m;
@@ -309,18 +342,11 @@
       }
     }
 
-    // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // Initial load
-    loadLinks();
-    loadZones();
-    loadEvents();
-    fetchLocations();
-
-    // Polling
+    loadLinks(); loadZones(); loadEvents(); fetchLocations();
     setInterval(loadLinks, 10000);
     setInterval(fetchLocations, 5000);
     setInterval(loadZones, 15000);
