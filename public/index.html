@@ -6,31 +6,16 @@
   <title id="pageTitle">Tracker</title>
   <link rel="manifest" href="/manifest.json">
   <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
-    @keyframes bounceIn { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-    @keyframes slideRight { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
-
-    html,body { height:100%; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0a0a0f; color:#f0f0f5; overflow:hidden; }
-
-    /* SIDE-BY-SIDE LAYOUT */
-    .app-layout { display:flex; height:100vh; width:100vw; }
-    .map-panel { flex:1; min-width:0; position:relative; }
-    .map-panel #map { width:100%; height:100%; }
-    .ui-panel { width:420px; max-width:90vw; display:flex; flex-direction:column; background:#0d0d14; border-left:1px solid rgba(255,255,255,0.05); overflow:hidden; }
-
-    .ui-header { padding:16px 20px 8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-    .ui-header h1 { font-size:20px; font-weight:700; background:linear-gradient(135deg,#f0f0f5,#007aff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .lang-select { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#f0f0f5; padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; outline:none; }
-
-    .ui-content { flex:1; overflow-y:auto; padding:0 16px 16px; }
-    .ui-content::-webkit-scrollbar { width:4px; }
-    .ui-content::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }
-
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.7 } }
+    @keyframes bounceIn { 0% { transform:scale(0);opacity:0 } 50% { transform:scale(1.1) } 100% { transform:scale(1);opacity:1 } }
+    html,body { height:100%; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0a0a0f; color:#f0f0f5; }
+    #map { height:45vh; width:100%; z-index:0; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .container { max-width:600px; margin:0 auto; padding:12px 16px; }
     .row { display:flex; gap:8px; margin:8px 0; }
     .row input { flex:1; padding:10px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:10px; font-size:14px; background:rgba(255,255,255,0.04); color:#f0f0f5; outline:none; transition:all 0.2s; }
     .row input:focus { border-color:#007aff; background:rgba(0,122,255,0.06); }
@@ -38,12 +23,12 @@
     .row button { padding:10px 16px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
     .row button:active { transform:scale(0.96); }
     .btn-primary { background:linear-gradient(135deg,#007aff,#5856d6); color:white; box-shadow:0 4px 15px rgba(0,122,255,0.25); }
-    .btn-sm { padding:6px 12px; font-size:12px; }
-
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+    .header h1 { font-size:24px; font-weight:700; background:linear-gradient(135deg,#f0f0f5,#007aff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .lang-select { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#f0f0f5; padding:5px 8px; border-radius:8px; font-size:12px; cursor:pointer; outline:none; }
     .tabs { display:flex; gap:3px; margin:10px 0; background:rgba(255,255,255,0.03); border-radius:10px; padding:3px; }
     .tab { flex:1; text-align:center; padding:8px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; color:rgba(255,255,255,0.35); transition:all 0.3s; }
     .tab.active { background:rgba(0,122,255,0.12); color:#007aff; font-weight:600; }
-
     .card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:14px; margin:8px 0; animation:fadeIn 0.3s ease; }
     .link-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.03); animation:fadeIn 0.3s ease; }
     .link-item:last-child { border-bottom:none; }
@@ -51,652 +36,224 @@
     .link-url { font-size:10px; color:rgba(255,255,255,0.25); word-break:break-all; margin-top:2px; }
     .link-status { font-size:11px; margin-top:4px; color:rgba(255,255,255,0.4); }
     .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; animation:pulse 2s infinite; flex-shrink:0; }
-    .zone-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); animation:fadeIn 0.3s ease; }
+    .zone-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
     .zone-item:last-child { border-bottom:none; }
-    .zone-item span { font-size:13px; }
     .event-item { padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:12px; animation:fadeIn 0.3s ease; }
     .event-item:last-child { border-bottom:none; }
     .event-enter { color:#34c759; }
     .event-exit { color:#ff3b30; }
     .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:500; margin-right:4px; background:rgba(52,199,89,0.1); color:#34c759; border:1px solid rgba(52,199,89,0.15); }
-
     .actions { display:flex; gap:4px; }
-    .copy-btn, .share-btn { border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.2s; }
+    .copy-btn, .share-btn { border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
     .copy-btn { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.5); }
     .share-btn { background:rgba(0,122,255,0.12); color:#007aff; }
-    .dlt-btn { background:none; border:none; color:rgba(255,255,255,0.15); font-size:18px; cursor:pointer; padding:2px; }
-
+    .dlt-btn { background:none; border:none; color:rgba(255,255,255,0.15); font-size:18px; cursor:pointer; }
     .empty-state { color:rgba(255,255,255,0.15); text-align:center; padding:24px 0; font-size:13px; }
-
-    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(30,30,40,0.95); backdrop-filter:blur(20px); color:white; padding:12px 24px; border-radius:12px; font-size:13px; opacity:0; transition:opacity 0.4s,transform 0.4s; pointer-events:none; z-index:9999; border:1px solid rgba(255,255,255,0.06); white-space:nowrap; }
-    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(30,30,40,0.95); backdrop-filter:blur(20px); color:white; padding:12px 24px; border-radius:12px; font-size:13px; opacity:0; transition:opacity 0.4s; pointer-events:none; z-index:9999; border:1px solid rgba(255,255,255,0.06); white-space:nowrap; }
+    .toast.show { opacity:1; }
     .notif-badge { position:fixed; top:12px; right:12px; background:#ff3b30; color:white; border-radius:50%; min-width:22px; height:22px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; z-index:1000; padding:0 6px; box-shadow:0 4px 15px rgba(255,59,48,0.3); animation:bounceIn 0.3s ease; }
     .slider-group { display:flex; align-items:center; gap:10px; margin-top:6px; }
-    .slider-group span { font-size:12px; color:rgba(255,255,255,0.4); min-width:45px; }
+    .slider-group span { font-size:12px; color:rgba(255,255,255,0.4); }
     input[type="range"] { -webkit-appearance:none; flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,0.08); outline:none; }
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#007aff; cursor:pointer; box-shadow:0 2px 8px rgba(0,122,255,0.3); }
     .hint { font-size:12px; color:rgba(255,255,255,0.25); margin-bottom:8px; }
-
-    /* Search bar overlay */
-    .search-container { position:absolute; top:12px; left:12px; right:60px; z-index:1000; }
-    .search-row { display:flex; gap:6px; }
-    .search-row input { flex:1; padding:10px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:10px; font-size:14px;
-      background:rgba(20,20,30,0.9); backdrop-filter:blur(15px); color:#f0f0f5; outline:none; transition:all 0.2s; }
-    .search-row input:focus { border-color:#007aff; }
-    .search-row input::placeholder { color:rgba(255,255,255,0.3); }
-    .search-row button { padding:10px 14px; border:none; border-radius:10px; background:rgba(0,122,255,0.2); color:#007aff;
-      font-size:16px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(15px); }
-    .search-row button:hover { background:rgba(0,122,255,0.35); }
-    .search-results { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:rgba(20,20,30,0.95);
-      backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; display:none; max-height:200px; overflow-y:auto; }
-    .search-results div { padding:10px 14px; font-size:13px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.03);
-      transition:background 0.15s; }
+    /* Search bar */
+    .search-wrap { position:absolute; top:10px; left:10px; right:10px; z-index:1000; display:flex; gap:6px; }
+    .search-wrap input { flex:1; padding:9px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:8px; font-size:13px; background:rgba(20,20,30,0.9); backdrop-filter:blur(15px); color:#f0f0f5; outline:none; }
+    .search-wrap input:focus { border-color:#007aff; }
+    .search-wrap input::placeholder { color:rgba(255,255,255,0.3); }
+    .search-wrap button { padding:9px 12px; border:none; border-radius:8px; background:rgba(0,122,255,0.2); color:#007aff; font-size:15px; cursor:pointer; }
+    .search-results { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:rgba(20,20,30,0.95); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.08); border-radius:8px; display:none; max-height:180px; overflow-y:auto; }
+    .search-results div { padding:8px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.03); }
     .search-results div:last-child { border-bottom:none; }
     .search-results div:hover { background:rgba(0,122,255,0.1); }
-    .search-results.show { display:block; animation:fadeIn 0.15s ease; }
-
-    @media(max-width:768px) {
-      .app-layout { flex-direction:column; }
-      .map-panel { height:40vh; flex:none; }
-      .ui-panel { width:100%; max-width:100%; border-left:none; border-top:1px solid rgba(255,255,255,0.05); }
-    }
+    .search-results.show { display:block; }
+    .map-wrap { position:relative; }
   </style>
 </head>
 <body>
-  <div class="app-layout">
-    <div class="map-panel">
-      <div class="search-container">
-        <div class="search-row">
-          <input type="text" id="searchInput" placeholder="Search city..." autocomplete="off" />
-          <button onclick="searchPlace()">🔍</button>
-        </div>
-        <div class="search-results" id="searchResults"></div>
-      </div>
-      <div id="map"></div>
-    </div>
-    <div class="ui-panel">
-      <div class="ui-header">
-        <h1 id="title">Tracker</h1>
-        <select class="lang-select" id="langSelect" onchange="setLang(this.value)">
-          <option value="en">English</option>
-          <option value="nl">Nederlands</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-          <option value="de">Deutsch</option>
-          <option value="it">Italiano</option>
-          <option value="pt">Português</option>
-          <option value="ru">Русский</option>
-          <option value="ja">日本語</option>
-          <option value="zh">中文</option>
-          <option value="ar">العربية</option>
-          <option value="tr">Türkçe</option>
-          <option value="pl">Polski</option>
-          <option value="sv">Svenska</option>
-          <option value="da">Dansk</option>
-          <option value="fi">Suomi</option>
-          <option value="nb">Norsk</option>
-          <option value="ko">한국어</option>
-          <option value="hi">हिन्दी</option>
-          <option value="th">ไทย</option>
-          <option value="vi">Tiếng Việt</option>
-          <option value="ro">Română</option>
-          <option value="cs">Čeština</option>
-          <option value="el">Ελληνικά</option>
-          <option value="hu">Magyar</option>
-        </select>
-      </div>
-      <div class="ui-content">
-        <div class="tabs" id="tabs">
-          <div class="tab active" data-tab="people" id="tabLblPeople">People</div>
-          <div class="tab" data-tab="zones" id="tabLblZones">Zones</div>
-          <div class="tab" data-tab="events" id="tabLblActivity">Activity</div>
-        </div>
-
-        <div id="tab-people">
-          <div class="card">
-            <div class="row">
-              <input type="text" id="labelInput" placeholder="Name (Mom, John...)" />
-              <button class="btn-primary" onclick="createLink()" id="btnAddLink">+ Link</button>
-            </div>
-          </div>
-          <div class="card" id="linksContainer"><div class="empty-state" id="emptyLinks">No links yet</div></div>
-        </div>
-
-        <div id="tab-zones" style="display:none">
-          <div class="card">
-            <div class="hint" id="zoneHint">Click the map to place a zone</div>
-            <div class="row">
-              <input type="text" id="zoneNameInput" placeholder="Zone name (Home, Work...)" />
-              <button class="btn-primary" onclick="createZone()" id="btnAddZone">+ Zone</button>
-            </div>
-            <div class="slider-group">
-              <span id="lblRadius">Radius</span>
-              <input type="range" id="zoneRadius" min="20" max="500" value="100" oninput="document.getElementById('zrDisplay').textContent=this.value+'m'">
-              <span id="zrDisplay" style="min-width:40px;text-align:right">100m</span>
-            </div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:6px;text-align:center" id="zoneCoords"></div>
-          </div>
-          <div class="card" id="zonesContainer"><div class="empty-state" id="emptyZones">No zones yet</div></div>
-        </div>
-
-        <div id="tab-events" style="display:none">
-          <div class="card" id="eventsContainer"><div class="empty-state" id="emptyEvents">No activity yet</div></div>
-        </div>
-      </div>
+  <div class="map-wrap" id="mapWrap">
+    <div id="map"></div>
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="Search city..." autocomplete="off" />
+      <button onclick="searchPlace()">🔍</button>
+      <div class="search-results" id="searchResults"></div>
     </div>
   </div>
-
+  <div class="container">
+    <div class="header">
+      <h1 id="title">Tracker</h1>
+      <select class="lang-select" id="langSelect" onchange="setLang(this.value)">
+        <option value="en">English</option>
+        <option value="nl">Nederlands</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="it">Italiano</option>
+        <option value="pt">Português</option>
+        <option value="ru">Русский</option>
+        <option value="ja">日本語</option>
+        <option value="zh">中文</option>
+        <option value="ar">العربية</option>
+        <option value="tr">Türkçe</option>
+        <option value="pl">Polski</option>
+        <option value="sv">Svenska</option>
+        <option value="da">Dansk</option>
+        <option value="fi">Suomi</option>
+        <option value="nb">Norsk</option>
+        <option value="ko">한국어</option>
+        <option value="hi">हिन्दी</option>
+        <option value="th">ไทย</option>
+        <option value="vi">Tiếng Việt</option>
+        <option value="ro">Română</option>
+        <option value="cs">Čeština</option>
+        <option value="el">Ελληνικά</option>
+        <option value="hu">Magyar</option>
+      </select>
+    </div>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="people" id="tabLblPeople">People</div>
+      <div class="tab" data-tab="zones" id="tabLblZones">Zones</div>
+      <div class="tab" data-tab="events" id="tabLblActivity">Activity</div>
+    </div>
+    <div id="tab-people">
+      <div class="card">
+        <div class="row">
+          <input type="text" id="labelInput" placeholder="Name (Mom, John...)" />
+          <button class="btn-primary" onclick="createLink()" id="btnAddLink">+ Link</button>
+        </div>
+      </div>
+      <div class="card" id="linksContainer"><div class="empty-state" id="emptyLinks">No links yet</div></div>
+    </div>
+    <div id="tab-zones" style="display:none">
+      <div class="card">
+        <div class="hint" id="zoneHint">Click the map to place a zone</div>
+        <div class="row">
+          <input type="text" id="zoneNameInput" placeholder="Zone name (Home, Work...)" />
+          <button class="btn-primary" onclick="createZone()" id="btnAddZone">+ Zone</button>
+        </div>
+        <div class="slider-group">
+          <span id="lblRadius">Radius</span>
+          <input type="range" id="zoneRadius" min="20" max="500" value="100" oninput="document.getElementById('zrDisplay').textContent=this.value+'m'">
+          <span id="zrDisplay" style="min-width:40px;text-align:right">100m</span>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:6px;text-align:center" id="zoneCoords"></div>
+      </div>
+      <div class="card" id="zonesContainer"><div class="empty-state" id="emptyZones">No zones yet</div></div>
+    </div>
+    <div id="tab-events" style="display:none">
+      <div class="card" id="eventsContainer"><div class="empty-state" id="emptyEvents">No activity yet</div></div>
+    </div>
+  </div>
   <div class="toast" id="toast"></div>
   <div class="notif-badge" id="notifBadge">0</div>
-
   <script>
-    // ====== LANGUAGES ======
-    const L = {
-      en: {
-        title:'Tracker', tabPeople:'People', tabZones:'Zones', tabActivity:'Activity',
-        namePlaceholder:'Name (Mom, John...)', btnAddLink:'+ Link', emptyLinks:'No links yet',
-        zoneHint:'Click the map to place a zone', zonePlaceholder:'Zone name (Home, Work...)', btnAddZone:'+ Zone',
-        lblRadius:'Radius', emptyZones:'No zones yet', emptyEvents:'No activity yet',
-        linkCopied:'Copied ✓', zoneCreated:'Zone created ✓', linkCreated:'Link created ✓',
-        clickMapName:'Click the map and name the zone', waiting:'waiting...',
-        entered:'arrived at', left:'left', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Delete zone?', linkDelete:'Delete link?', notifEnter:'arrived at', notifLeft:'left'
-      },
-      nl: {
-        title:'Tracker', tabPeople:'Mensen', tabZones:'Zones', tabActivity:'Activiteit',
-        namePlaceholder:'Naam (Mama, John...)', btnAddLink:'+ Link', emptyLinks:'Nog geen links',
-        zoneHint:'Klik op de kaart om een zone te plaatsen', zonePlaceholder:'Zonenaam (Thuis, Werk...)', btnAddZone:'+ Zone',
-        lblRadius:'Straal', emptyZones:'Nog geen zones', emptyEvents:'Nog geen activiteit',
-        linkCopied:'Gekopieerd ✓', zoneCreated:'Zone aangemaakt ✓', linkCreated:'Link aangemaakt ✓',
-        clickMapName:'Klik op de kaart en geef de zone een naam', waiting:'wacht...',
-        entered:'aangekomen bij', left:'vertrokken uit', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Zone verwijderen?', linkDelete:'Link verwijderen?', notifEnter:'aangekomen bij', notifLeft:'vertrokken uit'
-      },
-      es: {
-        title:'Tracker', tabPeople:'Personas', tabZones:'Zonas', tabActivity:'Actividad',
-        namePlaceholder:'Nombre (Mamá, Juan...)', btnAddLink:'+ Enlace', emptyLinks:'Sin enlaces',
-        zoneHint:'Haz clic en el mapa para colocar una zona', zonePlaceholder:'Nombre de zona (Casa, Trabajo...)', btnAddZone:'+ Zona',
-        lblRadius:'Radio', emptyZones:'Sin zonas', emptyEvents:'Sin actividad',
-        linkCopied:'Copiado ✓', zoneCreated:'Zona creada ✓', linkCreated:'Enlace creado ✓',
-        clickMapName:'Haz clic en el mapa y nombra la zona', waiting:'esperando...',
-        entered:'llegó a', left:'salió de', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'¿Eliminar zona?', linkDelete:'¿Eliminar enlace?', notifEnter:'llegó a', notifLeft:'salió de'
-      },
-      fr: {
-        title:'Tracker', tabPeople:'Personnes', tabZones:'Zones', tabActivity:'Activité',
-        namePlaceholder:'Nom (Maman, Jean...)', btnAddLink:'+ Lien', emptyLinks:'Aucun lien',
-        zoneHint:'Cliquez sur la carte pour placer une zone', zonePlaceholder:'Nom de zone (Maison, Travail...)', btnAddZone:'+ Zone',
-        lblRadius:'Rayon', emptyZones:'Aucune zone', emptyEvents:'Aucune activité',
-        linkCopied:'Copié ✓', zoneCreated:'Zone créée ✓', linkCreated:'Lien créé ✓',
-        clickMapName:'Cliquez sur la carte et nommez la zone', waiting:'attente...',
-        entered:'arrivé à', left:'parti de', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Supprimer la zone ?', linkDelete:'Supprimer le lien ?', notifEnter:'arrivé à', notifLeft:'parti de'
-      },
-      de: {
-        title:'Tracker', tabPeople:'Personen', tabZones:'Zonen', tabActivity:'Aktivität',
-        namePlaceholder:'Name (Mama, Hans...)', btnAddLink:'+ Link', emptyLinks:'Keine Links',
-        zoneHint:'Klicke auf die Karte, um eine Zone zu setzen', zonePlaceholder:'Zonenname (Zuhause, Arbeit...)', btnAddZone:'+ Zone',
-        lblRadius:'Radius', emptyZones:'Keine Zonen', emptyEvents:'Keine Aktivität',
-        linkCopied:'Kopiert ✓', zoneCreated:'Zone erstellt ✓', linkCreated:'Link erstellt ✓',
-        clickMapName:'Klicke auf die Karte und benenne die Zone', waiting:'warte...',
-        entered:'angekommen bei', left:'verlassen von', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Zone löschen?', linkDelete:'Link löschen?', notifEnter:'angekommen bei', notifLeft:'verlassen von'
-      },
-      it: {
-        title:'Tracker', tabPeople:'Persone', tabZones:'Zone', tabActivity:'Attività',
-        namePlaceholder:'Nome (Mamma, Giovanni...)', btnAddLink:'+ Link', emptyLinks:'Nessun link',
-        zoneHint:'Clicca sulla mappa per posizionare una zona', zonePlaceholder:'Nome zona (Casa, Lavoro...)', btnAddZone:'+ Zona',
-        lblRadius:'Raggio', emptyZones:'Nessuna zona', emptyEvents:'Nessuna attività',
-        linkCopied:'Copiato ✓', zoneCreated:'Zona creata ✓', linkCreated:'Link creato ✓',
-        clickMapName:'Clicca sulla mappa e nomina la zona', waiting:'in attesa...',
-        entered:'arrivato a', left:'partito da', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Eliminare zona?', linkDelete:'Eliminare link?', notifEnter:'arrivato a', notifLeft:'partito da'
-      },
-      pt: {
-        title:'Tracker', tabPeople:'Pessoas', tabZones:'Zonas', tabActivity:'Atividade',
-        namePlaceholder:'Nome (Mãe, João...)', btnAddLink:'+ Link', emptyLinks:'Sem links',
-        zoneHint:'Clique no mapa para colocar uma zona', zonePlaceholder:'Nome da zona (Casa, Trabalho...)', btnAddZone:'+ Zona',
-        lblRadius:'Raio', emptyZones:'Sem zonas', emptyEvents:'Sem atividade',
-        linkCopied:'Copiado ✓', zoneCreated:'Zona criada ✓', linkCreated:'Link criado ✓',
-        clickMapName:'Clique no mapa e nomeie a zona', waiting:'aguardando...',
-        entered:'chegou em', left:'saiu de', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Excluir zona?', linkDelete:'Excluir link?', notifEnter:'chegou em', notifLeft:'saiu de'
-      },
-      ru: {
-        title:'Трекер', tabPeople:'Люди', tabZones:'Зоны', tabActivity:'Активность',
-        namePlaceholder:'Имя (Мама, Джон...)', btnAddLink:'+ Ссылка', emptyLinks:'Нет ссылок',
-        zoneHint:'Нажмите на карту, чтобы разместить зону', zonePlaceholder:'Название зоны (Дом, Работа...)', btnAddZone:'+ Зона',
-        lblRadius:'Радиус', emptyZones:'Нет зон', emptyEvents:'Нет активности',
-        linkCopied:'Скопировано ✓', zoneCreated:'Зона создана ✓', linkCreated:'Ссылка создана ✓',
-        clickMapName:'Нажмите на карту и назовите зону', waiting:'ожидание...',
-        entered:'прибыл в', left:'покинул', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Удалить зону?', linkDelete:'Удалить ссылку?', notifEnter:'прибыл в', notifLeft:'покинул'
-      },
-      ja: {
-        title:'トラッカー', tabPeople:'人物', tabZones:'ゾーン', tabActivity:'アクティビティ',
-        namePlaceholder:'名前（ママ、ジョン...）', btnAddLink:'+ リンク', emptyLinks:'リンクがありません',
-        zoneHint:'マップをクリックしてゾーンを配置', zonePlaceholder:'ゾーン名（自宅、仕事...）', btnAddZone:'+ ゾーン',
-        lblRadius:'半径', emptyZones:'ゾーンがありません', emptyEvents:'アクティビティがありません',
-        linkCopied:'コピーしました ✓', zoneCreated:'ゾーンを作成しました ✓', linkCreated:'リンクを作成しました ✓',
-        clickMapName:'マップをクリックしてゾーンに名前を付けてください', waiting:'待機中...',
-        entered:'に到着', left:'から出発', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'ゾーンを削除しますか？', linkDelete:'リンクを削除しますか？', notifEnter:'に到着', notifLeft:'から出発'
-      },
-      zh: {
-        title:'追踪器', tabPeople:'人员', tabZones:'区域', tabActivity:'活动',
-        namePlaceholder:'姓名（妈妈、约翰...）', btnAddLink:'+ 链接', emptyLinks:'暂无链接',
-        zoneHint:'点击地图放置区域', zonePlaceholder:'区域名称（家、工作...）', btnAddZone:'+ 区域',
-        lblRadius:'半径', emptyZones:'暂无区域', emptyEvents:'暂无活动',
-        linkCopied:'已复制 ✓', zoneCreated:'区域已创建 ✓', linkCreated:'链接已创建 ✓',
-        clickMapName:'点击地图并为区域命名', waiting:'等待中...',
-        entered:'到达', left:'离开', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'删除区域？', linkDelete:'删除链接？', notifEnter:'到达', notifLeft:'离开'
-      },
-      ar: {
-        title:'المتعقب', tabPeople:'الأشخاص', tabZones:'المناطق', tabActivity:'النشاط',
-        namePlaceholder:'الاسم (أمي، جون...)', btnAddLink:'+ رابط', emptyLinks:'لا توجد روابط',
-        zoneHint:'انقر على الخريطة لوضع منطقة', zonePlaceholder:'اسم المنطقة (منزل، عمل...)', btnAddZone:'+ منطقة',
-        lblRadius:'نصف القطر', emptyZones:'لا توجد مناطق', emptyEvents:'لا يوجد نشاط',
-        linkCopied:'تم النسخ ✓', zoneCreated:'تم إنشاء المنطقة ✓', linkCreated:'تم إنشاء الرابط ✓',
-        clickMapName:'انقر على الخريطة وسم المنطقة', waiting:'انتظار...',
-        entered:'وصل إلى', left:'غادر', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'حذف المنطقة؟', linkDelete:'حذف الرابط؟', notifEnter:'وصل إلى', notifLeft:'غادر'
-      },
-      tr: {
-        title:'Takipçi', tabPeople:'Kişiler', tabZones:'Bölgeler', tabActivity:'Aktivite',
-        namePlaceholder:'İsim (Anne, Ahmet...)', btnAddLink:'+ Link', emptyLinks:'Link yok',
-        zoneHint:'Bölge yerleştirmek için haritaya tıklayın', zonePlaceholder:'Bölge adı (Ev, İş...)', btnAddZone:'+ Bölge',
-        lblRadius:'Yarıçap', emptyZones:'Bölge yok', emptyEvents:'Aktivite yok',
-        linkCopied:'Kopyalandı ✓', zoneCreated:'Bölge oluşturuldu ✓', linkCreated:'Link oluşturuldu ✓',
-        clickMapName:'Haritaya tıklayın ve bölgeyi adlandırın', waiting:'bekleniyor...',
-        entered:'geldi', left:'ayrıldı', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Bölgeyi sil?', linkDelete:'Linki sil?', notifEnter:'geldi', notifLeft:'ayrıldı'
-      },
-      pl: {
-        title:'Tracker', tabPeople:'Osoby', tabZones:'Strefy', tabActivity:'Aktywność',
-        namePlaceholder:'Imię (Mama, Jan...)', btnAddLink:'+ Link', emptyLinks:'Brak linków',
-        zoneHint:'Kliknij mapę, aby umieścić strefę', zonePlaceholder:'Nazwa strefy (Dom, Praca...)', btnAddZone:'+ Strefa',
-        lblRadius:'Promień', emptyZones:'Brak stref', emptyEvents:'Brak aktywności',
-        linkCopied:'Skopiowano ✓', zoneCreated:'Strefa utworzona ✓', linkCreated:'Link utworzony ✓',
-        clickMapName:'Kliknij mapę i nazwij strefę', waiting:'czekanie...',
-        entered:'przybył do', left:'opuścił', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Usunąć strefę?', linkDelete:'Usunąć link?', notifEnter:'przybył do', notifLeft:'opuścił'
-      },
-      sv: {
-        title:'Trackern', tabPeople:'Personer', tabZones:'Zoner', tabActivity:'Aktivitet',
-        namePlaceholder:'Namn (Mamma, Johan...)', btnAddLink:'+ Länk', emptyLinks:'Inga länkar',
-        zoneHint:'Klicka på kartan för att placera en zon', zonePlaceholder:'Zonnamn (Hem, Arbete...)', btnAddZone:'+ Zon',
-        lblRadius:'Radie', emptyZones:'Inga zoner', emptyEvents:'Ingen aktivitet',
-        linkCopied:'Kopierad ✓', zoneCreated:'Zon skapad ✓', linkCreated:'Länk skapad ✓',
-        clickMapName:'Klicka på kartan och namnge zonen', waiting:'väntar...',
-        entered:'kom till', left:'lämnade', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Ta bort zon?', linkDelete:'Ta bort länk?', notifEnter:'kom till', notifLeft:'lämnade'
-      },
-      da: {
-        title:'Tracker', tabPeople:'Personer', tabZones:'Zoner', tabActivity:'Aktivitet',
-        namePlaceholder:'Navn (Mor, Jens...)', btnAddLink:'+ Link', emptyLinks:'Ingen links',
-        zoneHint:'Klik på kortet for at placere en zone', zonePlaceholder:'Zonenavn (Hjem, Arbejde...)', btnAddZone:'+ Zone',
-        lblRadius:'Radius', emptyZones:'Ingen zoner', emptyEvents:'Ingen aktivitet',
-        linkCopied:'Kopieret ✓', zoneCreated:'Zone oprettet ✓', linkCreated:'Link oprettet ✓',
-        clickMapName:'Klik på kortet og navngiv zonen', waiting:'venter...',
-        entered:'ankom til', left:'forlod', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Slet zone?', linkDelete:'Slet link?', notifEnter:'ankom til', notifLeft:'forlod'
-      },
-      fi: {
-        title:'Seuranta', tabPeople:'Henkilöt', tabZones:'Alueet', tabActivity:'Toiminta',
-        namePlaceholder:'Nimi (Äiti, Mikko...)', btnAddLink:'+ Linkki', emptyLinks:'Ei linkkejä',
-        zoneHint:'Klikkaa karttaa asettaaksesi alueen', zonePlaceholder:'Alueen nimi (Koti, Työ...)', btnAddZone:'+ Alue',
-        lblRadius:'Säde', emptyZones:'Ei alueita', emptyEvents:'Ei toimintaa',
-        linkCopied:'Kopioitu ✓', zoneCreated:'Alue luotu ✓', linkCreated:'Linkki luotu ✓',
-        clickMapName:'Klikkaa karttaa ja nimeä alue', waiting:'odottaa...',
-        entered:'saapui', left:'poistui', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Poista alue?', linkDelete:'Poista linkki?', notifEnter:'saapui', notifLeft:'poistui'
-      },
-      nb: {
-        title:'Tracker', tabPeople:'Personer', tabZones:'Soner', tabActivity:'Aktivitet',
-        namePlaceholder:'Navn (Mamma, Ola...)', btnAddLink:'+ Lenke', emptyLinks:'Ingen lenker',
-        zoneHint:'Klikk på kartet for å plassere en sone', zonePlaceholder:'Sonenavn (Hjem, Jobb...)', btnAddZone:'+ Sone',
-        lblRadius:'Radius', emptyZones:'Ingen soner', emptyEvents:'Ingen aktivitet',
-        linkCopied:'Kopiert ✓', zoneCreated:'Sone opprettet ✓', linkCreated:'Lenke opprettet ✓',
-        clickMapName:'Klikk på kartet og navngi sonen', waiting:'venter...',
-        entered:'ankom til', left:'forlot', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Slett sone?', linkDelete:'Slett lenke?', notifEnter:'ankom til', notifLeft:'forlot'
-      },
-      ko: {
-        title:'트래커', tabPeople:'사람', tabZones:'구역', tabActivity:'활동',
-        namePlaceholder:'이름 (엄마, 존...)', btnAddLink:'+ 링크', emptyLinks:'링크 없음',
-        zoneHint:'지도를 클릭하여 구역 배치', zonePlaceholder:'구역 이름 (집, 직장...)', btnAddZone:'+ 구역',
-        lblRadius:'반경', emptyZones:'구역 없음', emptyEvents:'활동 없음',
-        linkCopied:'복사됨 ✓', zoneCreated:'구역 생성됨 ✓', linkCreated:'링크 생성됨 ✓',
-        clickMapName:'지도를 클릭하고 구역 이름을 지정하세요', waiting:'대기 중...',
-        entered:'도착', left:'떠남', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'구역 삭제?', linkDelete:'링크 삭제?', notifEnter:'도착', notifLeft:'떠남'
-      },
-      hi: {
-        title:'ट्रैकर', tabPeople:'लोग', tabZones:'क्षेत्र', tabActivity:'गतिविधि',
-        namePlaceholder:'नाम (माँ, जॉन...)', btnAddLink:'+ लिंक', emptyLinks:'कोई लिंक नहीं',
-        zoneHint:'ज़ोन रखने के लिए मानचित्र पर क्लिक करें', zonePlaceholder:'ज़ोन का नाम (घर, काम...)', btnAddZone:'+ ज़ोन',
-        lblRadius:'त्रिज्या', emptyZones:'कोई ज़ोन नहीं', emptyEvents:'कोई गतिविधि नहीं',
-        linkCopied:'कॉपी किया ✓', zoneCreated:'ज़ोन बनाया ✓', linkCreated:'लिंक बनाया ✓',
-        clickMapName:'मानचित्र पर क्लिक करें और ज़ोन को नाम दें', waiting:'प्रतीक्षा...',
-        entered:'पहुंचे', left:'निकल गए', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'ज़ोन हटाएं?', linkDelete:'लिंक हटाएं?', notifEnter:'पहुंचे', notifLeft:'निकल गए'
-      },
-      th: {
-        title:'ตัวติดตาม', tabPeople:'บุคคล', tabZones:'โซน', tabActivity:'กิจกรรม',
-        namePlaceholder:'ชื่อ (แม่, จอห์น...)', btnAddLink:'+ ลิงก์', emptyLinks:'ไม่มีลิงก์',
-        zoneHint:'คลิกที่แผนที่เพื่อวางโซน', zonePlaceholder:'ชื่อโซน (บ้าน, ที่ทำงาน...)', btnAddZone:'+ โซน',
-        lblRadius:'รัศมี', emptyZones:'ไม่มีโซน', emptyEvents:'ไม่มีกิจกรรม',
-        linkCopied:'คัดลอกแล้ว ✓', zoneCreated:'สร้างโซนแล้ว ✓', linkCreated:'สร้างลิงก์แล้ว ✓',
-        clickMapName:'คลิกแผนที่และตั้งชื่อโซน', waiting:'กำลังรอ...',
-        entered:'มาถึง', left:'ออกจาก', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'ลบโซน?', linkDelete:'ลบลิงก์?', notifEnter:'มาถึง', notifLeft:'ออกจาก'
-      },
-      vi: {
-        title:'Trình theo dõi', tabPeople:'Người', tabZones:'Khu vực', tabActivity:'Hoạt động',
-        namePlaceholder:'Tên (Mẹ, John...)', btnAddLink:'+ Liên kết', emptyLinks:'Chưa có liên kết',
-        zoneHint:'Nhấp vào bản đồ để đặt khu vực', zonePlaceholder:'Tên khu vực (Nhà, Cơ quan...)', btnAddZone:'+ Khu vực',
-        lblRadius:'Bán kính', emptyZones:'Chưa có khu vực', emptyEvents:'Chưa có hoạt động',
-        linkCopied:'Đã sao chép ✓', zoneCreated:'Đã tạo khu vực ✓', linkCreated:'Đã tạo liên kết ✓',
-        clickMapName:'Nhấp vào bản đồ và đặt tên khu vực', waiting:'đang chờ...',
-        entered:'đã đến', left:'đã rời', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Xóa khu vực?', linkDelete:'Xóa liên kết?', notifEnter:'đã đến', notifLeft:'đã rời'
-      },
-      ro: {
-        title:'Tracker', tabPeople:'Persoane', tabZones:'Zone', tabActivity:'Activitate',
-        namePlaceholder:'Nume (Mama, Ion...)', btnAddLink:'+ Link', emptyLinks:'Fără linkuri',
-        zoneHint:'Faceți clic pe hartă pentru a plasa o zonă', zonePlaceholder:'Nume zonă (Acasă, Serviciu...)', btnAddZone:'+ Zonă',
-        lblRadius:'Rază', emptyZones:'Fără zone', emptyEvents:'Fără activitate',
-        linkCopied:'Copiat ✓', zoneCreated:'Zonă creată ✓', linkCreated:'Link creat ✓',
-        clickMapName:'Faceți clic pe hartă și denumiți zona', waiting:'așteptare...',
-        entered:'a sosit la', left:'a plecat din', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Ștergeți zona?', linkDelete:'Ștergeți linkul?', notifEnter:'a sosit la', notifLeft:'a plecat din'
-      },
-      cs: {
-        title:'Sledovač', tabPeople:'Lidé', tabZones:'Zóny', tabActivity:'Aktivita',
-        namePlaceholder:'Jméno (Máma, Jan...)', btnAddLink:'+ Odkaz', emptyLinks:'Žádné odkazy',
-        zoneHint:'Kliknutím na mapu umístěte zónu', zonePlaceholder:'Název zóny (Domov, Práce...)', btnAddZone:'+ Zóna',
-        lblRadius:'Poloměr', emptyZones:'Žádné zóny', emptyEvents:'Žádná aktivita',
-        linkCopied:'Zkopírováno ✓', zoneCreated:'Zóna vytvořena ✓', linkCreated:'Odkaz vytvořen ✓',
-        clickMapName:'Klikněte na mapu a pojmenujte zónu', waiting:'čekání...',
-        entered:'dorazil do', left:'opustil', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Smazat zónu?', linkDelete:'Smazat odkaz?', notifEnter:'dorazil do', notifLeft:'opustil'
-      },
-      el: {
-        title:'Ιχνηλάτης', tabPeople:'Άτομα', tabZones:'Ζώνες', tabActivity:'Δραστηριότητα',
-        namePlaceholder:'Όνομα (Μαμά, Γιάννης...)', btnAddLink:'+ Σύνδεσμος', emptyLinks:'Χωρίς συνδέσμους',
-        zoneHint:'Κάντε κλικ στον χάρτη για να τοποθετήσετε μια ζώνη', zonePlaceholder:'Όνομα ζώνης (Σπίτι, Εργασία...)', btnAddZone:'+ Ζώνη',
-        lblRadius:'Ακτίνα', emptyZones:'Χωρίς ζώνες', emptyEvents:'Χωρίς δραστηριότητα',
-        linkCopied:'Αντιγράφηκε ✓', zoneCreated:'Η ζώνη δημιουργήθηκε ✓', linkCreated:'Ο σύνδεσμος δημιουργήθηκε ✓',
-        clickMapName:'Κάντε κλικ στον χάρτη και ονομάστε τη ζώνη', waiting:'αναμονή...',
-        entered:'έφτασε σε', left:'έφυγε από', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Διαγραφή ζώνης;', linkDelete:'Διαγραφή συνδέσμου;', notifEnter:'έφτασε σε', notifLeft:'έφυγε από'
-      },
-      hu: {
-        title:'Követő', tabPeople:'Személyek', tabZones:'Zónák', tabActivity:'Tevékenység',
-        namePlaceholder:'Név (Anya, János...)', btnAddLink:'+ Link', emptyLinks:'Nincs link',
-        zoneHint:'Kattintson a térképre egy zóna elhelyezéséhez', zonePlaceholder:'Zóna neve (Otthon, Munka...)', btnAddZone:'+ Zóna',
-        lblRadius:'Sugár', emptyZones:'Nincs zóna', emptyEvents:'Nincs tevékenység',
-        linkCopied:'Másolva ✓', zoneCreated:'Zóna létrehozva ✓', linkCreated:'Link létrehozva ✓',
-        clickMapName:'Kattintson a térképre és nevezze el a zónát', waiting:'várakozás...',
-        entered:'megérkezett', left:'elhagyta', toastEnter:'📍', toastExit:'🚶',
-        zoneDelete:'Zóna törlése?', linkDelete:'Link törlése?', notifEnter:'megérkezett', notifLeft:'elhagyta'
-      }
+    const LANG = {
+      en: { title:'Tracker', tabPeople:'People', tabZones:'Zones', tabActivity:'Activity', namePH:'Name (Mom, John...)', addLink:'+ Link', emptyLinks:'No links yet', zoneHint:'Click the map to place a zone', zonePH:'Zone name (Home, Work...)', addZone:'+ Zone', radius:'Radius', emptyZones:'No zones yet', emptyEvents:'No activity yet', copied:'Copied ✓', zoneCreated:'Zone created ✓', linkCreated:'Link created ✓', clickMapName:'Click the map and name the zone', waiting:'waiting...', entered:'arrived at', left:'left', deleteZone:'Delete zone?', deleteLink:'Delete link?', searchPH:'Search city...', noResults:'No results' },
+      nl: { title:'Tracker', tabPeople:'Mensen', tabZones:'Zones', tabActivity:'Activiteit', namePH:'Naam (Mama, John...)', addLink:'+ Link', emptyLinks:'Nog geen links', zoneHint:'Klik op de kaart om een zone te plaatsen', zonePH:'Zonenaam (Thuis, Werk...)', addZone:'+ Zone', radius:'Straal', emptyZones:'Nog geen zones', emptyEvents:'Nog geen activiteit', copied:'Gekopieerd ✓', zoneCreated:'Zone aangemaakt ✓', linkCreated:'Link aangemaakt ✓', clickMapName:'Klik op de kaart en geef de zone een naam', waiting:'wacht...', entered:'aangekomen bij', left:'vertrokken uit', deleteZone:'Zone verwijderen?', deleteLink:'Link verwijderen?', searchPH:'Zoek stad...', noResults:'Geen resultaten' },
+      es: { title:'Tracker', tabPeople:'Personas', tabZones:'Zonas', tabActivity:'Actividad', namePH:'Nombre (Mamá, Juan...)', addLink:'+ Enlace', emptyLinks:'Sin enlaces', zoneHint:'Haz clic en el mapa', zonePH:'Nombre (Casa, Trabajo...)', addZone:'+ Zona', radius:'Radio', emptyZones:'Sin zonas', emptyEvents:'Sin actividad', copied:'Copiado ✓', zoneCreated:'Zona creada ✓', linkCreated:'Enlace creado ✓', clickMapName:'Haz clic en el mapa', waiting:'esperando...', entered:'llegó a', left:'salió de', deleteZone:'¿Eliminar zona?', deleteLink:'¿Eliminar enlace?', searchPH:'Buscar ciudad...', noResults:'Sin resultados' },
+      fr: { title:'Tracker', tabPeople:'Personnes', tabZones:'Zones', tabActivity:'Activité', namePH:'Nom (Maman, Jean...)', addLink:'+ Lien', emptyLinks:'Aucun lien', zoneHint:'Cliquez sur la carte', zonePH:'Nom (Maison, Travail...)', addZone:'+ Zone', radius:'Rayon', emptyZones:'Aucune zone', emptyEvents:'Aucune activité', copied:'Copié ✓', zoneCreated:'Zone créée ✓', linkCreated:'Lien créé ✓', clickMapName:'Cliquez sur la carte', waiting:'attente...', entered:'arrivé à', left:'parti de', deleteZone:'Supprimer la zone ?', deleteLink:'Supprimer le lien ?', searchPH:'Rechercher ville...', noResults:'Aucun résultat' },
+      de: { title:'Tracker', tabPeople:'Personen', tabZones:'Zonen', tabActivity:'Aktivität', namePH:'Name (Mama, Hans...)', addLink:'+ Link', emptyLinks:'Keine Links', zoneHint:'Klicke auf die Karte', zonePH:'Zonenname (Zuhause, Arbeit...)', addZone:'+ Zone', radius:'Radius', emptyZones:'Keine Zonen', emptyEvents:'Keine Aktivität', copied:'Kopiert ✓', zoneCreated:'Zone erstellt ✓', linkCreated:'Link erstellt ✓', clickMapName:'Klicke auf die Karte', waiting:'warte...', entered:'angekommen bei', left:'verlassen von', deleteZone:'Zone löschen?', deleteLink:'Link löschen?', searchPH:'Stadt suchen...', noResults:'Keine Ergebnisse' },
+      it: { title:'Tracker', tabPeople:'Persone', tabZones:'Zone', tabActivity:'Attività', namePH:'Nome (Mamma, Giovanni...)', addLink:'+ Link', emptyLinks:'Nessun link', zoneHint:'Clicca sulla mappa', zonePH:'Nome zona (Casa, Lavoro...)', addZone:'+ Zona', radius:'Raggio', emptyZones:'Nessuna zona', emptyEvents:'Nessuna attività', copied:'Copiato ✓', zoneCreated:'Zona creata ✓', linkCreated:'Link creato ✓', clickMapName:'Clicca sulla mappa', waiting:'in attesa...', entered:'arrivato a', left:'partito da', deleteZone:'Eliminare zona?', deleteLink:'Eliminare link?', searchPH:'Cerca città...', noResults:'Nessun risultato' },
+      pt: { title:'Tracker', tabPeople:'Pessoas', tabZones:'Zonas', tabActivity:'Atividade', namePH:'Nome (Mãe, João...)', addLink:'+ Link', emptyLinks:'Sem links', zoneHint:'Clique no mapa', zonePH:'Nome (Casa, Trabalho...)', addZone:'+ Zona', radius:'Raio', emptyZones:'Sem zonas', emptyEvents:'Sem atividade', copied:'Copiado ✓', zoneCreated:'Zona criada ✓', linkCreated:'Link criado ✓', clickMapName:'Clique no mapa', waiting:'aguardando...', entered:'chegou em', left:'saiu de', deleteZone:'Excluir zona?', deleteLink:'Excluir link?', searchPH:'Buscar cidade...', noResults:'Sem resultados' },
+      ja: { title:'トラッカー', tabPeople:'人物', tabZones:'ゾーン', tabActivity:'アクティビティ', namePH:'名前（ママ、ジョン...）', addLink:'+ リンク', emptyLinks:'リンクがありません', zoneHint:'マップをクリック', zonePH:'ゾーン名（自宅、仕事...）', addZone:'+ ゾーン', radius:'半径', emptyZones:'ゾーンがありません', emptyEvents:'アクティビティがありません', copied:'コピーしました ✓', zoneCreated:'ゾーンを作成しました ✓', linkCreated:'リンクを作成しました ✓', clickMapName:'マップをクリック', waiting:'待機中...', entered:'に到着', left:'から出発', deleteZone:'削除しますか？', deleteLink:'削除しますか？', searchPH:'都市を検索...', noResults:'結果がありません' },
+      zh: { title:'追踪器', tabPeople:'人员', tabZones:'区域', tabActivity:'活动', namePH:'姓名（妈妈、约翰...）', addLink:'+ 链接', emptyLinks:'暂无链接', zoneHint:'点击地图', zonePH:'名称（家、工作...）', addZone:'+ 区域', radius:'半径', emptyZones:'暂无区域', emptyEvents:'暂无活动', copied:'已复制 ✓', zoneCreated:'已创建 ✓', linkCreated:'已创建 ✓', clickMapName:'点击地图', waiting:'等待中...', entered:'到达', left:'离开', deleteZone:'删除？', deleteLink:'删除？', searchPH:'搜索城市...', noResults:'无结果' },
+      ar: { title:'المتعقب', tabPeople:'الأشخاص', tabZones:'المناطق', tabActivity:'النشاط', namePH:'الاسم (أمي، جون...)', addLink:'+ رابط', emptyLinks:'لا توجد روابط', zoneHint:'انقر على الخريطة', zonePH:'اسم المنطقة (منزل...)', addZone:'+ منطقة', radius:'نصف القطر', emptyZones:'لا توجد مناطق', emptyEvents:'لا يوجد نشاط', copied:'تم النسخ ✓', zoneCreated:'تم إنشاء المنطقة ✓', linkCreated:'تم إنشاء الرابط ✓', clickMapName:'انقر على الخريطة', waiting:'انتظار...', entered:'وصل إلى', left:'غادر', deleteZone:'حذف؟', deleteLink:'حذف؟', searchPH:'بحث عن مدينة...', noResults:'لا توجد نتائج' },
+      tr: { title:'Takipçi', tabPeople:'Kişiler', tabZones:'Bölgeler', tabActivity:'Aktivite', namePH:'İsim (Anne, Ahmet...)', addLink:'+ Link', emptyLinks:'Link yok', zoneHint:'Haritaya tıklayın', zonePH:'Bölge adı (Ev, İş...)', addZone:'+ Bölge', radius:'Yarıçap', emptyZones:'Bölge yok', emptyEvents:'Aktivite yok', copied:'Kopyalandı ✓', zoneCreated:'Bölge oluşturuldu ✓', linkCreated:'Link oluşturuldu ✓', clickMapName:'Haritaya tıklayın', waiting:'bekleniyor...', entered:'geldi', left:'ayrıldı', deleteZone:'Sil?', deleteLink:'Sil?', searchPH:'Şehir ara...', noResults:'Sonuç yok' },
+      ru: { title:'Трекер', tabPeople:'Люди', tabZones:'Зоны', tabActivity:'Активность', namePH:'Имя (Мама, Джон...)', addLink:'+ Ссылка', emptyLinks:'Нет ссылок', zoneHint:'Нажмите на карту', zonePH:'Название (Дом, Работа...)', addZone:'+ Зона', radius:'Радиус', emptyZones:'Нет зон', emptyEvents:'Нет активности', copied:'Скопировано ✓', zoneCreated:'Зона создана ✓', linkCreated:'Ссылка создана ✓', clickMapName:'Нажмите на карту', waiting:'ожидание...', entered:'прибыл в', left:'покинул', deleteZone:'Удалить?', deleteLink:'Удалить?', searchPH:'Поиск города...', noResults:'Нет результатов' }
     };
-
-    let currentLang = localStorage.getItem('trackerLang') || navigator.language.slice(0,2) || 'en';
-    if (!L[currentLang]) currentLang = 'en';
-
-    function t(key) {
-      return L[currentLang]?.[key] || L['en'][key] || key;
-    }
-
-    function setLang(code) {
-      currentLang = code;
-      localStorage.setItem('trackerLang', code);
-      document.documentElement.lang = code;
-      if (code === 'ar' || code === 'he') document.body.dir = 'rtl';
-      else document.body.dir = 'ltr';
-      applyLang();
-    }
-
+    let cl = localStorage.getItem('tl') || 'en';
+    if (!LANG[cl]) cl = 'en';
+    function t(k) { return LANG[cl]?.[k] || LANG.en[k] || k; }
+    function setLang(c) { cl = c; localStorage.setItem('tl', c); document.documentElement.lang = c; applyLang(); }
     function applyLang() {
-      const map = {
-        title:'title', tabLblPeople:'tabPeople', tabLblZones:'tabZones', tabLblActivity:'tabActivity',
-        labelInput:'namePlaceholder', btnAddLink:'btnAddLink', emptyLinks:'emptyLinks',
-        zoneHint:'zoneHint', zoneNameInput:'zonePlaceholder', btnAddZone:'btnAddZone',
-        lblRadius:'lblRadius', emptyZones:'emptyZones', emptyEvents:'emptyEvents'
-      };
-      for (const [elId, key] of Object.entries(map)) {
-        const el = document.getElementById(elId);
-        if (el && el.tagName === 'INPUT') el.placeholder = t(key);
-        else if (el) el.textContent = t(key);
+      const m = { title:'title', tabLblPeople:'tabPeople', tabLblZones:'tabZones', tabLblActivity:'tabActivity',
+        labelInput:'namePH', btnAddLink:'addLink', emptyLinks:'emptyLinks', zoneHint:'zoneHint',
+        zoneNameInput:'zonePH', btnAddZone:'addZone', lblRadius:'radius', emptyZones:'emptyZones',
+        emptyEvents:'emptyEvents', searchInput:'searchPH' };
+      for (const [id,k] of Object.entries(m)) {
+        const e = document.getElementById(id);
+        if (e && e.tagName==='INPUT') e.placeholder = t(k);
+        else if (e) e.textContent = t(k);
       }
     }
+    document.getElementById('langSelect').value = cl;
 
-    document.getElementById('langSelect').value = currentLang;
-
-    // ====== MAP ======
-    if (typeof L === 'undefined') {
-      document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.3);font-size:14px">Map failed to load. Check your ad blocker.</div>';
-    }
-    const map = L.map('map', { tap: false, zoomControl: false }).setView([40, -100], 3);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | CARTO'
-    }).addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
+    const map = L.map('map', { tap: false, zoomControl: true }).setView([40, -100], 3);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
     const colors = ['#007aff','#34c759','#ff9500','#ff2d55','#5856d6','#ff6482','#30d158','#64d2ff','#ffd60a','#bf5af2'];
-    const markers = {};
-    const zoneCircles = {};
-    let pendingZonePos = null;
-    let eventCount = 0;
+    const markers = {}, zoneCircles = {};
+    let pendingZonePos = null, eventCount = 0;
 
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
-        document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
-        if (tab.dataset.tab === 'events') {
-          document.getElementById('notifBadge').style.display = 'none';
-          eventCount = 0;
-        }
+        document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+        document.getElementById('tab-'+tab.dataset.tab).style.display='block';
+        if (tab.dataset.tab==='events') { document.getElementById('notifBadge').style.display='none'; eventCount=0; }
       });
     });
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2500);
-    }
-
-    map.on('click', (e) => {
-      document.querySelector('.tab[data-tab="zones"]').click();
-      pendingZonePos = e.latlng;
-      document.getElementById('zoneCoords').textContent =
-        `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
-    });
-
+    function toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+    map.on('click', e => { document.querySelector('.tab[data-tab="zones"]').click(); pendingZonePos=e.latlng; document.getElementById('zoneCoords').textContent=`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`; });
     async function createLink() {
-      const label = document.getElementById('labelInput').value.trim() || 'Untitled';
-      const res = await fetch('/api/create-link', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({label})
-      });
-      const data = await res.json();
-      document.getElementById('labelInput').value = '';
-      showToast(t('linkCreated'));
-      loadLinks();
-      if (navigator.share && data.url) {
-        try { await navigator.share({title:'Share location',text:'Open this to share your location with me',url:data.url}); } catch(_) {}
-      }
+      const label=document.getElementById('labelInput').value.trim()||'Untitled';
+      const r=await fetch('/api/create-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label})});
+      const d=await r.json(); document.getElementById('labelInput').value=''; toast(t('linkCreated')); loadLinks();
+      if (navigator.share&&d.url) try{await navigator.share({title:'Share location',text:'Open this to share your location',url:d.url});}catch(_){}
     }
-
     async function createZone() {
-      const name = document.getElementById('zoneNameInput').value.trim();
-      if (!name || !pendingZonePos) { showToast(t('clickMapName')); return; }
-      const radius = parseInt(document.getElementById('zoneRadius').value);
-      await fetch('/api/zones', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({name, lat: pendingZonePos.lat, lng: pendingZonePos.lng, radius})
-      });
-      showToast(t('zoneCreated'));
-      document.getElementById('zoneNameInput').value = '';
-      document.getElementById('zoneCoords').textContent = '';
-      pendingZonePos = null;
-      loadZones();
+      const n=document.getElementById('zoneNameInput').value.trim();
+      if(!n||!pendingZonePos){toast(t('clickMapName'));return;}
+      await fetch('/api/zones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,lat:pendingZonePos.lat,lng:pendingZonePos.lng,radius:parseInt(document.getElementById('zoneRadius').value)})});
+      toast(t('zoneCreated')); document.getElementById('zoneNameInput').value=''; document.getElementById('zoneCoords').textContent=''; pendingZonePos=null; loadZones();
     }
-
-    async function deleteZone(id) {
-      if (!confirm(t('zoneDelete'))) return;
-      await fetch('/api/zones/' + id, {method:'DELETE'});
-      if (zoneCircles[id]) { map.removeLayer(zoneCircles[id]); delete zoneCircles[id]; }
-      loadZones();
-    }
-
-    async function deleteLink(id) {
-      if (!confirm(t('linkDelete'))) return;
-      await fetch('/api/links/' + id, {method:'DELETE'});
-      if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
-      loadLinks();
-    }
-
-    function copyLink(url) {
-      if (navigator.clipboard) { navigator.clipboard.writeText(url); showToast(t('linkCopied')); }
-    }
-
-    function shareLink(url) {
-      if (navigator.share) { navigator.share({title:'Share location',text:'Open this to share your location',url}); }
-      else { copyLink(url); }
-    }
-
-    let searchTimeout;
-    const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      const q = searchInput.value.trim();
-      if (q.length < 2) { document.getElementById('searchResults').classList.remove('show'); return; }
-      searchTimeout = setTimeout(() => searchPlace(q), 400);
-    });
-    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchPlace(); });
-
-    async function searchPlace(query) {
-      const q = query || searchInput.value.trim();
-      if (q.length < 2) return;
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
-        const data = await res.json();
-        const box = document.getElementById('searchResults');
-        box.innerHTML = '';
-        if (data.length === 0) { box.innerHTML = '<div style="color:rgba(255,255,255,0.3)">No results</div>'; box.classList.add('show'); return; }
-        data.forEach(p => {
-          const d = document.createElement('div');
-          d.textContent = p.display_name.split(', ').slice(0,3).join(', ');
-          d.addEventListener('click', () => {
-            searchInput.value = d.textContent;
-            box.classList.remove('show');
-            map.flyTo([parseFloat(p.lat), parseFloat(p.lon)], 13);
-            L.circleMarker([parseFloat(p.lat), parseFloat(p.lon)], {
-              radius: 8, color: '#007aff', fillColor: '#007aff', fillOpacity: 0.5, weight: 2
-            }).addTo(map).bindPopup(`<b>${d.textContent}</b>`).openPopup();
-          });
-          box.appendChild(d);
-        });
-        box.classList.add('show');
-      } catch (e) { console.error(e); }
-    }
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-container')) document.getElementById('searchResults').classList.remove('show');
-    });
-
+    async function deleteZone(id){if(!confirm(t('deleteZone')))return;await fetch('/api/zones/'+id,{method:'DELETE'});if(zoneCircles[id]){map.removeLayer(zoneCircles[id]);delete zoneCircles[id];}loadZones();}
+    async function deleteLink(id){if(!confirm(t('deleteLink')))return;await fetch('/api/links/'+id,{method:'DELETE'});if(markers[id]){map.removeLayer(markers[id]);delete markers[id];}loadLinks();}
+    function copyLink(u){if(navigator.clipboard){navigator.clipboard.writeText(u);toast(t('copied'));}}
+    function shareLink(u){if(navigator.share)navigator.share({title:'Share location',text:'Open this to share your location',url:u});else copyLink(u);}
     async function loadLinks() {
-      const res = await fetch('/api/links');
-      const links = await res.json();
-      const container = document.getElementById('linksContainer');
-      if (links.length === 0) { container.innerHTML = `<div class="empty-state">${t('emptyLinks')}</div>`; return; }
-      container.innerHTML = links.map((link,i) => {
-        const color = colors[i%colors.length];
-        const zonesHere = (link.insideZones||[]).map(zid => { const z=window._zones?.find(zz=>zz.id===zid); return z?`<span class="tag">${z.name}</span>`:''; }).join('');
-        const isLive = link.latest && (Date.now()-new Date(link.latest.timestamp).getTime()<60000);
-        const status = link.latest
-          ? `<span class="link-status">${isLive?'<span style="color:#34c759">●</span>':'<span style="color:rgba(255,255,255,0.15)">○</span>'} ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()} ${zonesHere}</span>`
-          : `<span class="link-status">${t('waiting')}</span>`;
-        return `<div class="link-item">
-          <div style="flex:1;min-width:0">
-            <div class="link-label"><span class="status-dot" style="background:${color}"></span>${link.label}</div>
-            <div class="link-url">${window.location.origin}/track/${link.id}</div>
-            <div>${status}</div>
-          </div>
-          <div class="actions">
-            <button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${link.id}')">Copy</button>
-            <button class="share-btn" onclick="shareLink('${window.location.origin}/track/${link.id}')">Share</button>
-            <button class="dlt-btn" onclick="deleteLink('${link.id}')">×</button>
-          </div>
-        </div>`;
+      const r=await fetch('/api/links'),links=await r.json();
+      const c=document.getElementById('linksContainer');
+      if(links.length===0){c.innerHTML=`<div class="empty-state">${t('emptyLinks')}</div>`;return;}
+      c.innerHTML=links.map((l,i)=>{
+        const co=colors[i%colors.length];
+        const zh=(l.insideZones||[]).map(zid=>{const z=window._z?.find(zz=>zz.id===zid);return z?`<span class="tag">${z.name}</span>`:'';}).join('');
+        const live=l.latest&&(Date.now()-new Date(l.latest.timestamp).getTime()<60000);
+        return `<div class="link-item"><div style="flex:1;min-width:0"><div class="link-label"><span class="status-dot" style="background:${co}"></span>${l.label}</div><div class="link-url">${window.location.origin}/track/${l.id}</div><div class="link-status">${l.latest?`${live?'<span style="color:#34c759">●</span>':'<span style="color:rgba(255,255,255,0.15)">○</span>'} ${l.latest.name} · ${new Date(l.latest.timestamp).toLocaleTimeString()} ${zh}`:t('waiting')}</div></div><div class="actions"><button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${l.id}')">Copy</button><button class="share-btn" onclick="shareLink('${window.location.origin}/track/${l.id}')">Share</button><button class="dlt-btn" onclick="deleteLink('${l.id}')">×</button></div></div>`;
       }).join('');
     }
-
-    async function loadZones() {
-      const res = await fetch('/api/zones');
-      const zones = await res.json();
-      window._zones = zones;
-      Object.values(zoneCircles).forEach(c => map.removeLayer(c));
-      Object.keys(zoneCircles).forEach(k => delete zoneCircles[k]);
-      zones.forEach(z => {
-        const circle = L.circle([z.lat,z.lng], { radius:z.radius, color:'rgba(0,122,255,0.4)', fillColor:'rgba(0,122,255,0.08)', fillOpacity:1, weight:2 }).addTo(map);
-        circle.bindPopup(`<b style="color:#fff">${z.name}</b><br><span style="color:rgba(255,255,255,0.5)">${z.radius}m</span>`);
-        L.marker([z.lat,z.lng], { icon:L.divIcon({html:`<div style="background:rgba(0,122,255,0.15);color:#007aff;padding:3px 10px;border-radius:16px;font-size:11px;font-weight:600;white-space:nowrap;backdrop-filter:blur(10px);border:1px solid rgba(0,122,255,0.2)">${z.name}</div>`,className:'',iconSize:[0,0]}) }).addTo(map);
-        zoneCircles[z.id] = circle;
-      });
-      const container = document.getElementById('zonesContainer');
-      if (zones.length===0) { container.innerHTML = `<div class="empty-state">${t('emptyZones')}</div>`; return; }
-      container.innerHTML = zones.map(z => `<div class="zone-item"><div><span style="font-weight:600">${z.name}</span><br><span style="font-size:11px;color:rgba(255,255,255,0.25)">${z.lat.toFixed(5)}, ${z.lng.toFixed(5)} · ${z.radius}m</span></div><button class="dlt-btn" onclick="deleteZone('${z.id}')">×</button></div>`).join('');
+    async function loadZones(){
+      const r=await fetch('/api/zones'),zones=await r.json(); window._z=zones;
+      Object.values(zoneCircles).forEach(c=>map.removeLayer(c));Object.keys(zoneCircles).forEach(k=>delete zoneCircles[k]);
+      zones.forEach(z=>{const c=L.circle([z.lat,z.lng],{radius:z.radius,color:'rgba(0,122,255,0.4)',fillColor:'rgba(0,122,255,0.08)',fillOpacity:1,weight:2}).addTo(map);c.bindPopup(`<b style="color:#fff">${z.name}</b><br><span style="color:rgba(255,255,255,0.5)">${z.radius}m</span>`);L.marker([z.lat,z.lng],{icon:L.divIcon({html:`<div style="background:rgba(0,122,255,0.15);color:#007aff;padding:3px 10px;border-radius:16px;font-size:11px;font-weight:600;white-space:nowrap;backdrop-filter:blur(10px);border:1px solid rgba(0,122,255,0.2)">${z.name}</div>`,className:'',iconSize:[0,0]})}).addTo(map);zoneCircles[z.id]=c;});
+      document.getElementById('zonesContainer').innerHTML=zones.length===0?`<div class="empty-state">${t('emptyZones')}</div>`:zones.map(z=>`<div class="zone-item"><div><span style="font-weight:600">${z.name}</span><br><span style="font-size:11px;color:rgba(255,255,255,0.25)">${z.lat.toFixed(5)}, ${z.lng.toFixed(5)} · ${z.radius}m</span></div><button class="dlt-btn" onclick="deleteZone('${z.id}')">×</button></div>`).join('');
     }
-
-    async function loadEvents() {
-      const res = await fetch('/api/events');
-      const events = await res.json();
-      const container = document.getElementById('eventsContainer');
-      if (events.length===0) { container.innerHTML = `<div class="empty-state">${t('emptyEvents')}</div>`; return; }
-      const newEvents = events.filter(e => e.timestamp>(window._lastEventTime||'0'));
-      if (newEvents.length>0) {
-        eventCount += newEvents.length;
-        const badge = document.getElementById('notifBadge');
-        badge.textContent = eventCount; badge.style.display = 'flex';
-        const latest = newEvents[0];
-        showToast(`${latest.type==='enter'?t('toastEnter'):t('toastExit')} ${latest.personName} ${latest.type==='enter'?t('entered'):t('left')} "${latest.zoneName}"`);
-        if ('Notification' in window && Notification.permission==='granted')
-          new Notification('Tracker', { body:`${latest.personName} ${latest.type==='enter'?t('notifEnter'):t('notifLeft')} ${latest.zoneName}` });
-      }
-      window._lastEventTime = events[0]?.timestamp;
-      container.innerHTML = events.map(e => `<div class="event-item ${e.type==='enter'?'event-enter':'event-exit'}"><strong>${e.type==='enter'?'📍 ':'🚶 '}${e.personName}</strong> ${e.type==='enter'?t('entered'):t('left')} <strong>${e.zoneName}</strong><br><span style="color:rgba(255,255,255,0.15);font-size:10px">${new Date(e.timestamp).toLocaleString()}</span></div>`).join('');
+    async function loadEvents(){
+      const r=await fetch('/api/events'),events=await r.json();
+      const c=document.getElementById('eventsContainer');
+      if(events.length===0){c.innerHTML=`<div class="empty-state">${t('emptyEvents')}</div>`;return;}
+      const ne=events.filter(e=>e.timestamp>(window._let||'0'));
+      if(ne.length>0){eventCount+=ne.length;document.getElementById('notifBadge').textContent=eventCount;document.getElementById('notifBadge').style.display='flex';
+        const lt=ne[0];toast(`${lt.type==='enter'?'📍':'🚶'} ${lt.personName} ${lt.type==='enter'?t('entered'):t('left')} "${lt.zoneName}"`);
+        if('Notification' in window&&Notification.permission==='granted')new Notification('Tracker',{body:`${lt.personName} ${lt.type==='enter'?t('entered'):t('left')} ${lt.zoneName}`});}
+      window._let=events[0]?.timestamp;
+      c.innerHTML=events.map(e=>`<div class="event-item ${e.type==='enter'?'event-enter':'event-exit'}"><strong>${e.type==='enter'?'📍 ':'🚶 '}${e.personName}</strong> ${e.type==='enter'?t('entered'):t('left')} <strong>${e.zoneName}</strong><br><span style="color:rgba(255,255,255,0.15);font-size:10px">${new Date(e.timestamp).toLocaleString()}</span></div>`).join('');
     }
-
-    async function fetchLocations() {
-      const res = await fetch('/api/links');
-      const links = await res.json();
-      const allPoints = [];
-      links.forEach((link,i) => {
-        if (!link.latest) return;
-        const color = colors[i%colors.length];
-        const zonesHere = (link.insideZones||[]).map(zid => { const z=window._zones?.find(zz=>zz.id===zid); return z?z.name:''; }).filter(Boolean).join(', ');
-        const popupHtml = `<b style="color:#fff">${link.label}</b><br><span style="color:rgba(255,255,255,0.6)">${link.latest.name}<br>📍 ${link.latest.lat.toFixed(4)}, ${link.latest.lng.toFixed(4)}<br>🕐 ${new Date(link.latest.timestamp).toLocaleTimeString()}${zonesHere?'<br>📍 '+zonesHere:''}</span>`;
-        if (markers[link.id]) { markers[link.id].setLatLng([link.latest.lat,link.latest.lng]); markers[link.id].setPopupContent(popupHtml); }
-        else { const m = L.circleMarker([link.latest.lat,link.latest.lng], { radius:12, fillColor:color, color:'rgba(255,255,255,0.3)', weight:2, opacity:1, fillOpacity:0.9 }).addTo(map); m.bindPopup(popupHtml); markers[link.id]=m; }
-        allPoints.push([link.latest.lat,link.latest.lng]);
-      });
-      if (allPoints.length>0 && Object.keys(zoneCircles).length===0) map.fitBounds(allPoints, {padding:[50,50]});
+    async function fetchLocations(){
+      const r=await fetch('/api/links'),links=await r.json();const ap=[];
+      links.forEach((l,i)=>{if(!l.latest)return;const co=colors[i%colors.length];const pop=`<b style="color:#fff">${l.label}</b><br><span style="color:rgba(255,255,255,0.6)">${l.latest.name}<br>📍 ${l.latest.lat.toFixed(4)}, ${l.latest.lng.toFixed(4)}<br>🕐 ${new Date(l.latest.timestamp).toLocaleTimeString()}</span>`;if(markers[l.id]){markers[l.id].setLatLng([l.latest.lat,l.latest.lng]);markers[l.id].setPopupContent(pop);}else{const m=L.circleMarker([l.latest.lat,l.latest.lng],{radius:12,fillColor:co,color:'rgba(255,255,255,0.3)',weight:2,opacity:1,fillOpacity:0.9}).addTo(map);m.bindPopup(pop);markers[l.id]=m;}ap.push([l.latest.lat,l.latest.lng]);});
+      if(ap.length>0&&Object.keys(zoneCircles).length===0)map.fitBounds(ap,{padding:[50,50]});
     }
-
-    if ('Notification' in window && Notification.permission==='default') Notification.requestPermission();
-    applyLang();
-    loadLinks(); loadZones(); loadEvents(); fetchLocations();
-    setInterval(loadLinks,10000);
-    setInterval(fetchLocations,5000);
-    setInterval(loadZones,15000);
-    setInterval(loadEvents,5000);
+    // Search
+    let st;const si=document.getElementById('searchInput');
+    si.addEventListener('input',()=>{clearTimeout(st);const q=si.value.trim();if(q.length<2){document.getElementById('searchResults').classList.remove('show');return;}st=setTimeout(()=>searchPlace(q),400);});
+    si.addEventListener('keydown',e=>{if(e.key==='Enter')searchPlace();});
+    async function searchPlace(q){q=q||si.value.trim();if(q.length<2)return;try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);const d=await r.json();const b=document.getElementById('searchResults');b.innerHTML='';if(d.length===0){b.innerHTML=`<div style="color:rgba(255,255,255,0.3)">${t('noResults')}</div>`;b.classList.add('show');return;}d.forEach(p=>{const el=document.createElement('div');el.textContent=p.display_name.split(', ').slice(0,3).join(', ');el.addEventListener('click',()=>{si.value=el.textContent;b.classList.remove('show');map.flyTo([parseFloat(p.lat),parseFloat(p.lon)],13);L.circleMarker([parseFloat(p.lat),parseFloat(p.lon)],{radius:8,color:'#007aff',fillColor:'#007aff',fillOpacity:0.5,weight:2}).addTo(map).bindPopup(`<b>${el.textContent}</b>`).openPopup();});b.appendChild(el);});b.classList.add('show');}catch(e){console.error(e);}}
+    document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('searchResults').classList.remove('show');});
+    if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+    applyLang();loadLinks();loadZones();loadEvents();fetchLocations();
+    setInterval(loadLinks,10000);setInterval(fetchLocations,5000);setInterval(loadZones,15000);setInterval(loadEvents,5000);
   </script>
 </body>
 </html>
