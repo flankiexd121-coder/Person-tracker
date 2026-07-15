@@ -2,67 +2,114 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Tracker</title>
   <link rel="manifest" href="/manifest.json">
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
-    }
-  </script>
+  <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: -apple-system, sans-serif; background: #f5f5f5; }
-    #map { height: 50vh; width: 100%; }
-    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
-    .card { background: white; border-radius: 12px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    h1 { font-size: 24px; margin-bottom: 8px; }
-    .input-row { display: flex; gap: 8px; margin: 12px 0; }
-    .input-row input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-    .input-row button { padding: 10px 16px; background: #007aff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    .link-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
-    .link-item:last-child { border-bottom: none; }
-    .link-label { font-weight: 600; }
-    .link-url { font-size: 12px; color: #666; word-break: break-all; }
-    .link-status { font-size: 12px; color: #007aff; }
-    .delete-btn { color: #ff3b30; background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; }
-    .copy-btn { background: #e8e8e8; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-    .share-btn { background: #007aff; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-    .actions { display: flex; gap: 6px; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    .toast.show { opacity: 1; }
-    .person-marker { display: flex; align-items: center; gap: 4px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+    #map { height: 45vh; width: 100%; z-index: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 12px 16px; }
+    .row { display: flex; gap: 8px; margin: 8px 0; }
+    .row input { flex:1; padding: 10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:15px; }
+    .row button { padding:10px 16px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+    .btn-primary { background:#007aff; color:white; }
+    .btn-danger { background:#ff3b30; color:white; }
+    .btn-outline { background:white; color:#007aff; border:1px solid #007aff; }
+    .card { background:white; border-radius:14px; padding:16px; margin:10px 0; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+    .tabs { display:flex; gap:4px; margin-bottom:12px; background:#e8eaed; border-radius:10px; padding:3px; }
+    .tab { flex:1; text-align:center; padding:8px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; color:#666; }
+    .tab.active { background:white; color:#111; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .link-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+    .link-item:last-child { border-bottom:none; }
+    .link-label { font-weight:600; font-size:14px; }
+    .link-url { font-size:11px; color:#8e8e93; word-break:break-all; margin-top:2px; }
+    .link-status { font-size:12px; margin-top:4px; }
+    .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; }
+    .zone-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+    .zone-item:last-child { border-bottom:none; }
+    .event-item { padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+    .event-item:last-child { border-bottom:none; }
+    .event-enter { color:#2e7d32; }
+    .event-exit { color:#c62828; }
+    .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; margin-right:4px; background:#e8f5e9; color:#2e7d32; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; background:#ff3b30; color:white; margin-left:4px; }
+    .actions { display:flex; gap:6px; }
+    .copy-btn, .share-btn { background:#f2f2f7; border:none; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer; }
+    .share-btn { background:#007aff; color:white; }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:12px 24px; border-radius:10px; font-size:14px; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:9999; }
+    .toast.show { opacity:1; }
+    .empty-state { color:#aeaeb2; text-align:center; padding:24px 0; font-size:14px; }
+    .notif-badge { position:fixed; top:8px; right:8px; background:#ff3b30; color:white; border-radius:50%; min-width:22px; height:22px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; z-index:1000; padding:0 6px; display:none; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div class="container">
-    <h1>📍 Tracker</h1>
-    <p style="color:#666;margin-bottom:12px">Create a link, send it to someone, watch them on the map.</p>
-
-    <div class="card">
-      <div class="input-row">
-        <input type="text" id="labelInput" placeholder="Who? (e.g. Mom, John...)" />
-        <button onclick="createLink()">+ Link</button>
-      </div>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="people">People</div>
+      <div class="tab" data-tab="zones">Zones</div>
+      <div class="tab" data-tab="events">Activity</div>
     </div>
 
-    <div class="card" id="linksContainer">
-      <p style="color:#999;text-align:center;padding:20px">No links yet. Create one above!</p>
+    <!-- PEOPLE TAB -->
+    <div id="tab-people">
+      <div class="card">
+        <div class="row">
+          <input type="text" id="labelInput" placeholder="Who? (e.g. Mom, John...)" />
+          <button class="btn-primary" onclick="createLink()">+ Link</button>
+        </div>
+      </div>
+      <div class="card" id="linksContainer"><div class="empty-state">No links yet.</div></div>
+    </div>
+
+    <!-- ZONES TAB -->
+    <div id="tab-zones" style="display:none">
+      <div class="card">
+        <p style="font-size:13px;color:#666;margin-bottom:8px">Click on the map to place a zone, then name it.</p>
+        <div class="row">
+          <input type="text" id="zoneNameInput" placeholder="Zone name (e.g. Home, Work...)" />
+          <button class="btn-primary" onclick="createZone()">+ Zone</button>
+        </div>
+        <p style="font-size:12px;color:#999;margin-top:6px">Radius: <span id="zoneRadiusDisplay">100m</span>
+          <input type="range" id="zoneRadius" min="20" max="500" value="100" style="width:100%" oninput="zoneRadiusDisplay.textContent=this.value+'m'"></p>
+        <p id="zoneCoords" style="font-size:12px;color:#999"></p>
+      </div>
+      <div class="card" id="zonesContainer"><div class="empty-state">No zones yet.</div></div>
+    </div>
+
+    <!-- EVENTS TAB -->
+    <div id="tab-events" style="display:none">
+      <div class="card" id="eventsContainer"><div class="empty-state">No activity yet.</div></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="notif-badge" id="notifBadge">0</div>
 
   <script>
-    const map = L.map('map').setView([40, -100], 4);
+    const map = L.map('map', { tap: false }).setView([40, -100], 4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
     const colors = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4'];
     const markers = {};
+    const zoneCircles = {};
+    let pendingZonePos = null;
+    let eventCount = 0;
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+        document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+        if (tab.dataset.tab === 'events') document.getElementById('notifBadge').style.display = 'none';
+      });
+    });
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -70,21 +117,67 @@
       setTimeout(() => t.classList.remove('show'), 2000);
     }
 
+    // Click map to place zone
+    map.on('click', (e) => {
+      document.querySelector('.tab[data-tab="zones"]').click();
+      pendingZonePos = e.latlng;
+      document.getElementById('zoneCoords').textContent =
+        `📍 ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    });
+
     async function createLink() {
       const label = document.getElementById('labelInput').value.trim() || 'Untitled';
       const res = await fetch('/api/create-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label })
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({label})
       });
       const data = await res.json();
       document.getElementById('labelInput').value = '';
       showToast('Link created!');
       loadLinks();
-
       if (navigator.share && data.url) {
-        try { await navigator.share({ title: 'Share location', text: 'Open this link to share your location with me', url: data.url }); } catch(_) {}
+        try { await navigator.share({title:'Share location',text:'Open this to share your location with me',url:data.url}); } catch(_) {}
       }
+    }
+
+    async function createZone() {
+      const name = document.getElementById('zoneNameInput').value.trim();
+      if (!name || !pendingZonePos) { showToast('Click the map and enter a name'); return; }
+      const radius = parseInt(document.getElementById('zoneRadius').value);
+      const res = await fetch('/api/zones', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name, lat: pendingZonePos.lat, lng: pendingZonePos.lng, radius})
+      });
+      if (res.ok) {
+        showToast('Zone created!');
+        document.getElementById('zoneNameInput').value = '';
+        document.getElementById('zoneCoords').textContent = '';
+        pendingZonePos = null;
+        loadZones();
+      }
+    }
+
+    async function deleteZone(id) {
+      if (!confirm('Delete this zone?')) return;
+      await fetch('/api/zones/' + id, {method:'DELETE'});
+      if (zoneCircles[id]) { map.removeLayer(zoneCircles[id]); delete zoneCircles[id]; }
+      loadZones();
+    }
+
+    async function deleteLink(id) {
+      if (!confirm('Delete this link?')) return;
+      await fetch('/api/links/' + id, {method:'DELETE'});
+      if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+      loadLinks();
+    }
+
+    function copyLink(url) {
+      if (navigator.clipboard) { navigator.clipboard.writeText(url); showToast('Copied!'); }
+    }
+
+    function shareLink(url) {
+      if (navigator.share) { navigator.share({title:'Share location',text:'Open this to share your location',url}); }
+      else { copyLink(url); }
     }
 
     async function loadLinks() {
@@ -92,82 +185,146 @@
       const links = await res.json();
       const container = document.getElementById('linksContainer');
       if (links.length === 0) {
-        container.innerHTML = '<p style="color:#999;text-align:center;padding:20px">No links yet. Create one above!</p>';
+        container.innerHTML = '<div class="empty-state">No links yet. Create one above!</div>';
         return;
       }
       container.innerHTML = links.map((link, i) => {
         const color = colors[i % colors.length];
+        const zonesHere = (link.insideZones || []).map(zid => {
+          const z = window._zones?.find(zz => zz.id === zid);
+          return z ? `<span class="tag">${z.name}</span>` : '';
+        }).join('');
         const status = link.latest
-          ? `<span class="link-status">📍 ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()}</span>`
-          : '<span class="link-status" style="color:#999">Waiting...</span>';
-        return `
-          <div class="link-item">
-            <div>
-              <div class="link-label"><span class="dot" style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block"></span> ${link.label}</div>
-              <div class="link-url">${window.location.origin}/track/${link.id}</div>
-              <div style="margin-top:4px">${status}</div>
-            </div>
-            <div class="actions">
-              <button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${link.id}')">Copy</button>
-              <button class="share-btn" onclick="shareLink('${window.location.origin}/track/${link.id}')">Share</button>
-              <button class="delete-btn" onclick="deleteLink('${link.id}')">×</button>
-            </div>
+          ? `<span class="link-status" style="color:#666">📍 ${link.latest.name} · ${new Date(link.latest.timestamp).toLocaleTimeString()} ${zonesHere}</span>`
+          : '<span class="link-status" style="color:#aeaeb2">⏳ Waiting...</span>';
+        return `<div class="link-item">
+          <div>
+            <div class="link-label"><span class="status-dot" style="background:${color}"></span>${link.label}</div>
+            <div class="link-url">${window.location.origin}/track/${link.id}</div>
+            <div>${status}</div>
           </div>
-        `;
+          <div class="actions">
+            <button class="copy-btn" onclick="copyLink('${window.location.origin}/track/${link.id}')">Copy</button>
+            <button class="share-btn" onclick="shareLink('${window.location.origin}/track/${link.id}')">Share</button>
+            <button onclick="deleteLink('${link.id}')" style="background:none;border:none;color:#ff3b30;font-size:18px;cursor:pointer;padding:4px">×</button>
+          </div>
+        </div>`;
       }).join('');
     }
 
-    function copyLink(url) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(url);
-        showToast('Copied!');
+    async function loadZones() {
+      const res = await fetch('/api/zones');
+      const zones = await res.json();
+      window._zones = zones;
+      // Remove old zone circles
+      Object.values(zoneCircles).forEach(c => map.removeLayer(c));
+      Object.keys(zoneCircles).forEach(k => delete zoneCircles[k]);
+      zones.forEach(z => {
+        const circle = L.circle([z.lat, z.lng], {
+          radius: z.radius, color: '#007aff', fillColor: '#007aff', fillOpacity: 0.1, weight: 2
+        }).addTo(map);
+        circle.bindPopup(`<b>${z.name}</b><br>Radius: ${z.radius}m`);
+        L.marker([z.lat, z.lng], {
+          icon: L.divIcon({html: `<div style="background:#007aff;color:white;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">${z.name}</div>`, className: '', iconSize: [0,0]})
+        }).addTo(map);
+        zoneCircles[z.id] = circle;
+      });
+      const container = document.getElementById('zonesContainer');
+      if (zones.length === 0) {
+        container.innerHTML = '<div class="empty-state">No zones. Click the map to place one.</div>';
+        return;
+      }
+      container.innerHTML = zones.map(z => `<div class="zone-item">
+        <div><span style="font-weight:600">${z.name}</span><br><span style="font-size:12px;color:#8e8e93">${z.lat.toFixed(5)}, ${z.lng.toFixed(5)} · ${z.radius}m radius</span></div>
+        <button onclick="deleteZone('${z.id}')" style="background:none;border:none;color:#ff3b30;font-size:18px;cursor:pointer">×</button>
+      </div>`).join('');
+      if (zones.length > 0) {
+        map.fitBounds(zones.map(z => [z.lat, z.lng]), {padding: [50,50]});
       }
     }
 
-    function shareLink(url) {
-      if (navigator.share) {
-        navigator.share({ title: 'Share location', text: 'Open this to share your location', url });
-      } else {
-        copyLink(url);
+    async function loadEvents() {
+      const res = await fetch('/api/events');
+      const events = await res.json();
+      const container = document.getElementById('eventsContainer');
+      if (events.length === 0) {
+        container.innerHTML = '<div class="empty-state">No activity yet.</div>';
+        return;
       }
-    }
+      const newEvents = events.filter(e => e.timestamp > (window._lastEventTime || '0'));
+      if (newEvents.length > 0) {
+        eventCount += newEvents.length;
+        const badge = document.getElementById('notifBadge');
+        badge.textContent = eventCount;
+        badge.style.display = 'flex';
+        // Show toast for latest event
+        const latest = newEvents[0];
+        const icon = latest.type === 'enter' ? '📍' : '🚶';
+        showToast(`${icon} ${latest.personName} ${latest.type === 'enter' ? 'arrived at' : 'left'} "${latest.zoneName}"`);
+        // Play notification sound if supported
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Tracker', { body: `${latest.personName} ${latest.type === 'enter' ? 'arrived at' : 'left'} ${latest.zoneName}` });
+        }
+      }
+      window._lastEventTime = events[0]?.timestamp;
 
-    async function deleteLink(id) {
-      if (!confirm('Delete this link?')) return;
-      await fetch('/api/links/' + id, { method: 'DELETE' });
-      delete markers[id];
-      loadLinks();
+      container.innerHTML = events.map(e => {
+        const cls = e.type === 'enter' ? 'event-enter' : 'event-exit';
+        const icon = e.type === 'enter' ? '📍' : '🚶';
+        return `<div class="event-item ${cls}">
+          <strong>${icon} ${e.personName}</strong> ${e.type === 'enter' ? 'entered' : 'left'} <strong>${e.zoneName}</strong>
+          <br><span style="color:#8e8e93;font-size:11px">${new Date(e.timestamp).toLocaleString()}</span>
+        </div>`;
+      }).join('');
     }
 
     async function fetchLocations() {
       const res = await fetch('/api/links');
       const links = await res.json();
-      const hasNew = [];
+      const allPoints = [];
       links.forEach((link, i) => {
         if (!link.latest) return;
         const loc = link.latest;
         const color = colors[i % colors.length];
         const key = link.id;
+        const zonesHere = (link.insideZones || []).map(zid => {
+          const z = window._zones?.find(zz => zz.id === zid);
+          return z ? z.name : '';
+        }).filter(Boolean).join(', ');
+        const popupHtml = `<b>${link.label}</b><br>${loc.name}<br>📍 ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}<br>🕐 ${new Date(loc.timestamp).toLocaleTimeString()}${zonesHere ? '<br>📍 In: ' + zonesHere : ''}`;
         if (markers[key]) {
           markers[key].setLatLng([loc.lat, loc.lng]);
+          markers[key].setPopupContent(popupHtml);
         } else {
           const m = L.circleMarker([loc.lat, loc.lng], {
             radius: 12, fillColor: color, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.8
           }).addTo(map);
-          m.bindPopup(`<b>${link.label}</b><br>${loc.name}<br>📍 ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}<br>🕐 ${new Date(loc.timestamp).toLocaleTimeString()}`);
+          m.bindPopup(popupHtml);
           markers[key] = m;
-          hasNew.push(m.getLatLng());
         }
+        allPoints.push([loc.lat, loc.lng]);
       });
-      if (hasNew.length > 0) {
-        map.fitBounds(hasNew, { padding: [50,50] });
+      if (allPoints.length > 0 && Object.keys(zoneCircles).length === 0) {
+        map.fitBounds(allPoints, {padding: [50,50]});
       }
     }
 
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // Initial load
     loadLinks();
-    setInterval(loadLinks, 10000);
+    loadZones();
+    loadEvents();
     fetchLocations();
+
+    // Polling
+    setInterval(loadLinks, 10000);
     setInterval(fetchLocations, 5000);
+    setInterval(loadZones, 15000);
+    setInterval(loadEvents, 5000);
   </script>
 </body>
 </html>
